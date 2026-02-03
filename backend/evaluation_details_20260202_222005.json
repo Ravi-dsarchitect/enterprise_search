@@ -1,0 +1,1852 @@
+{
+  "Vector Only + Generation": {
+    "metrics": {
+      "total": 42,
+      "successful": 38,
+      "failed": 4,
+      "success_rate": 90.5,
+      "mrr": 0.905,
+      "avg_top_score": 0.838,
+      "failure_breakdown": {
+        "LOW_SIMILARITY": 3,
+        "UNCERTAIN": 1
+      },
+      "avg_latency": 5.899621424220857,
+      "config": {
+        "use_hybrid": false,
+        "use_hyde": false
+      },
+      "total_time": 247.784099817276
+    },
+    "failure_analysis": {
+      "total_failures": 4,
+      "by_reason": {
+        "LOW_SIMILARITY": [
+          {
+            "query": "What different types of whole life plans do you have?",
+            "plan": "Whole life Plan",
+            "top_score": 0.0035503944382071495,
+            "sources": [
+              "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+              "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+              "Smart Pension Individual_Sales Brochure Eng .pdf"
+            ]
+          },
+          {
+            "query": "What are the different types of pension plans?",
+            "plan": "Pension Plans",
+            "top_score": 0.02033279649913311,
+            "sources": [
+              "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+              "LIC's New Pension Plus Eng Brochure_171025.pdf",
+              "Lic NEW Jeevan Shanti  2025 _Eng_Singal page 21.08.2025.pdf"
+            ]
+          },
+          {
+            "query": "How does LIC handle claims review if a death claim is rejected due to alleged fraud or suppression of information?",
+            "plan": "nan",
+            "top_score": 0.005582683254033327,
+            "sources": [
+              "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+              "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+              "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf"
+            ]
+          }
+        ],
+        "UNCERTAIN": [
+          {
+            "query": "What different types of term assurance plans do you have?",
+            "plan": "Term Assurance Plan",
+            "top_score": 0.3588627576828003,
+            "sources": [
+              "whole_life_plan_type.pdf",
+              "term_insurance_plan_types.pdf",
+              "moneyback_plan_types.pdf"
+            ]
+          }
+        ]
+      },
+      "by_plan": {
+        "Whole life Plan": 1,
+        "Term Assurance Plan": 1,
+        "Pension Plans": 1,
+        "nan": 1
+      },
+      "low_score_queries": [
+        "What different types of whole life plans do you have?",
+        "What are the different types of pension plans?",
+        "How does LIC handle claims review if a death claim is rejected due to alleged fraud or suppression of information?"
+      ],
+      "recommendations": [
+        "Consider enabling hybrid search (BM25) for better keyword matching",
+        "Consider switching to OpenAI embeddings for better semantic understanding"
+      ]
+    },
+    "results": [
+      {
+        "query": "What different types of endowment plans do you have?",
+        "expected": "1.LIC's Single Premium Endowment Plan\n2.LIC's New Endowment Plan\n3.LIC's New Jeevan Anand\n4.LIC's Jeevan Lakshya\n5.LIC's Jeevan Labh Plan\n6.LIC's Amritbaal\n7.LIC's Bima Jyoti\n8.LIC's Jeevan Azad\n9.LIC's Nav Jeevan Shree\n10.LIC's Nav Jeevan Shree – Single Premium\n11.LIC's Bima Lakshmi",
+        "plan": "Endowment Plans",
+        "latency": 14.18600344657898,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.8884,
+            "text_preview": "[Policy Term|P1]   Endowment\n   Plan Sales\n    Brochure\n\n\n\n\n            LIC’s SINGLE PREMIUM ENDOWMENT\n                                                                       PLAN (UIN: 512N283V03)\n                                                  (A Par, Non-Linked, Life, Individual,\n               ",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "endowment_plan_types.pdf",
+            "score": 0.3726,
+            "text_preview": "[Premium|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\nAs individuals it is inherent to differ. Each individual's insurance needs and requirements are different\nfrom that of the others. LIC's Insurance Plans are policies that talk to you individua",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.2432,
+            "text_preview": "[Premium|P12]                                                                                                                Name of the Prospect / Policyholder:                                                                                                                                           ",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.0012,
+            "text_preview": "[Fund|P7]                                                                           Option 1: 1.25 times of Single Premium;\n                                                                          Option 2: 10   times of Single Premium\n                                                               ",
+            "section_type": "fund"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.0007,
+            "text_preview": "[Fund|P2]                    best suits theirneeds such as under annuities, ULIPs etc.\n                                                 Key Features\n                                                              •                             The plan provides for protection and savings.\n             ",
+            "section_type": "fund"
+          }
+        ],
+        "top_score": 0.8884404897689819,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "Based on the provided context, here are the different types of endowment plans offered by LIC:\n\n1. **LIC's Single Premium Endowment Plan**\n   - **Plan No.**: 717\n   - **UIN**: 512N283V03\n   - **Features**: \n     - Single premium payment.\n     - Provides both protection and savings.\n     - Flexibility to choose the period for which protection is required.\n   - **Type**: Par, Non-Linked, Life, Individual, Savings Plan\n   - **Source**: [LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf]\n\n2. **LIC's New Endowment Plan**\n   - **Plan No.**: 714\n   - **UIN**: 512N277V03\n   - **Source**: [endowment_plan_types.pdf]\n\n3. **LIC's New Jeevan Anand**\n   - **Plan No.**: 715\n   - **UIN**: 512N279V03\n   - **Source**: [endowment_plan_types.pdf]\n\n4. **LIC's Jeevan Lakshya**\n   - **Plan No.**: 733\n   - **UIN**: 512N297V03\n   - **Source**: [endowment_plan_types.pdf]\n\n5. **LIC's Jeevan Labh Plan**\n   - **Plan No.**: 736\n   - **UIN**: 512N304V03\n   - **Source**: [endowment_plan_types.pdf]\n\n6. **LIC's Amritbaal**\n   - **Plan No.**: 774\n   - **UIN**: 512N365V02\n   - **Source**: [endowment_plan_types.pdf]\n\n7. **LIC's Bima Jyoti**\n   - **Plan No.**: 760\n   - **UIN**: 512N339V03\n   - **Source**: [endowment_plan_types.pdf]\n\nThese plans cater to different insurance needs and offer a combination of protection and savings. Each plan has unique features and benefits tailored to individual requirements."
+      },
+      {
+        "query": "What are the key benefits of LIC’s Single Premium Endowment Plan?",
+        "expected": "LIC’s Single Premium Endowment Plan offers both protection and savings. It provides a death benefit during the policy term and a maturity benefit if the policyholder survives the term. Additional features include optional rider benefits, high sum assured rebates, policy loans, and flexible payment options like settlement of maturity proceeds or death benefit in instalments. ",
+        "plan": "nan",
+        "latency": 6.094944715499878,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.9995,
+            "text_preview": "[Policy Term|P1]   Endowment\n   Plan Sales\n    Brochure\n\n\n\n\n            LIC’s SINGLE PREMIUM ENDOWMENT\n                                                                       PLAN (UIN: 512N283V03)\n                                                  (A Par, Non-Linked, Life, Individual,\n               ",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.9614,
+            "text_preview": "[Premium|P12]                                                                                                                Name of the Prospect / Policyholder:                                                                                                                                           ",
+            "section_type": "premium"
+          },
+          {
+            "source": "endowment_plan_types.pdf",
+            "score": 0.8551,
+            "text_preview": "[Premium|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\nAs individuals it is inherent to differ. Each individual's insurance needs and requirements are different\nfrom that of the others. LIC's Insurance Plans are policies that talk to you individua",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.3285,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.263,
+            "text_preview": "[Benefits|P18]          extra premiums and any rider premium(s) other than Term Assurance Rider, if any.\n\n                    Distribution Channel:                                             Offline                                                                                                     ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9995044469833374,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### Key Benefits of LIC’s Single Premium Endowment Plan\n\nLIC’s Single Premium Endowment Plan is designed to offer a combination of savings and protection. Here are the key benefits of this plan:\n\n- **Single Premium Payment**: The plan requires only a one-time premium payment, making it convenient for those who prefer not to make recurring payments.\n\n- **Protection and Savings**: It provides financial protection against death during the policy term, ensuring that beneficiaries are supported in the event of the policyholder's demise.\n\n- **Lump Sum Payment**: If the policyholder survives the policy term, a lump sum amount is paid at the end of the selected policy term, serving as a savings benefit.\n\n- **Flexibility**: The plan offers the flexibility to choose the period for which protection is required, allowing policyholders to tailor the plan to their specific needs.\n\n- **Purchase Channels**: This plan can be purchased offline through licensed agents, corporate agents, brokers, and insurance marketing firms, providing multiple avenues for acquisition.\n\nThese features make the LIC’s Single Premium Endowment Plan an attractive option for individuals seeking a straightforward, single-payment insurance plan with both protection and savings components. \n\n[Source: LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf]"
+      },
+      {
+        "query": "Who is eligible to purchase LIC’s Single Premium Endowment Plan, and what is the minimum and maximum age for entry?",
+        "expected": "The plan is available to individuals with a minimum entry age of 30 days and a maximum entry age of 65 years (nearer birthday). The minimum policy term is 10 years, and the maximum term is 25 years. The minimum sum assured is ₹1,00,000, with no upper limit. ",
+        "plan": "nan",
+        "latency": 3.801830530166626,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.9662,
+            "text_preview": "[Premium|P12]                                                                                                                Name of the Prospect / Policyholder:                                                                                                                                           ",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.9656,
+            "text_preview": "[Policy Term|P1]   Endowment\n   Plan Sales\n    Brochure\n\n\n\n\n            LIC’s SINGLE PREMIUM ENDOWMENT\n                                                                       PLAN (UIN: 512N283V03)\n                                                  (A Par, Non-Linked, Life, Individual,\n               ",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.3988,
+            "text_preview": "[Eligibility|P3] \n         ii.                                                Minimum and                                                 Premium                                                    Minimum                                                   Maximum  Age at\n                             ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.3727,
+            "text_preview": "[Eligibility|P3] •                                                                              For age at entry of Life Assured less than 50 years: Higher\n           of Basic Sum Assured or 1.25 times of Single premium.\n•                                                                              ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.1398,
+            "text_preview": "[Eligibility|P3]                    Premium                               individual will be subject to underwriting decision as\n                                                         per the Board Approved Underwriting Policy.\n     iv                                             Minimum [90] Days ",
+            "section_type": "eligibility"
+          }
+        ],
+        "top_score": 0.9662401676177979,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "To be eligible to purchase LIC’s Single Premium Endowment Plan, the following criteria must be met:\n\n- **Minimum Age at Entry**: There is no specific minimum age mentioned in the provided context for this plan.\n- **Maximum Age at Entry**: The maximum age at entry is not explicitly stated in the provided context for this plan.\n\nHowever, there are specific conditions related to the sum assured based on the age of the life assured:\n\n- For individuals under 50 years of age, the sum assured is the higher of the Basic Sum Assured or 1.25 times the Single Premium.\n- For individuals aged 50 years and above, the sum assured is the higher of the Basic Sum Assured or 1.10 times the Single Premium.\n\nPlease note that the single premium mentioned excludes taxes, extra premium, and rider premiums, if any [Source: LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf].\n\nI don't have sufficient information in the provided documents to specify the exact minimum and maximum age for entry."
+      },
+      {
+        "query": "What are the key benefits of LIC’s Amritbaal Plan?",
+        "expected": "LIC’s Amritbaal is a non-linked, non-participating savings plan for children, designed to build a corpus for higher education and other needs. It offers guaranteed additions at Rs. 80 per thousand Basic Sum Assured, fixed death and maturity benefits, optional premium waiver rider, high sum assured rebates, flexible premium payment options (single or limited), and the choice to receive maturity or death benefits in instalments. ",
+        "plan": "nan",
+        "latency": 9.493687152862549,
+        "retrieved_docs": [
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.9965,
+            "text_preview": "[Annuity|P2] \n                     LIC ’s Amritbaal (UIN: 512N365V02)(A Non – Par, Non-Linked,\n                               Life, Individual, Savings Plan)\nLIC’s Amritbaal          is          a,          Non-Par,          Non-Linked,          Life,          Individual,\nSavings          plan.     ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.8688,
+            "text_preview": "[Policy Term|P12]       •                                               Maximum Policy Term: 20 years.\n      •                                               Maximum Sum Assured on Death (per life): Rs 25 Lakhs.\n            LIC  ’s       Amritbaal       plan       falls       under       the       ca",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.7489,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.1709,
+            "text_preview": "[Benefits|P18]          extra premiums and any rider premium(s) other than Term Assurance Rider, if any.\n\n                    Distribution Channel:                                             Offline                                                                                                     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "moneyback_plan_types.pdf",
+            "score": 0.0151,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          }
+        ],
+        "top_score": 0.9965009689331055,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### Key Benefits of LIC’s Amritbaal Plan\n\nLIC’s Amritbaal is a Non-Par, Non-Linked, Life, Individual, Savings Plan designed to accumulate a corpus for the higher education and other needs of your child. Here are the key benefits:\n\n- **Guaranteed Additions**: The plan facilitates the accumulation of a corpus through guaranteed additions. This ensures that the benefits payable on death or survival are guaranteed and fixed, irrespective of actual experience. \n\n- **Non-Participating Product**: As a non-participating product, the policy does not entitle the policyholder to any discretionary benefits like bonuses or a share in surplus.\n\n- **Policy Term and Sum Assured**:\n  - Maximum Policy Term: 20 years.\n  - Maximum Sum Assured on Death (per life): Rs 25 Lakhs.\n\n- **Purchase Channels**: The plan can be purchased offline through licensed agents, corporate agents, brokers, insurance marketing firms, Point of Sales Persons-Life Insurance (POSP-LI), Common Public Service Centers (CPSC-SPV), and online directly.\n\n- **Endowment Category**: If purchased through POSP-LI or CPSC-SPV, the plan falls under the category of Non-Linked, Non-Participating, Endowment products.\n\nThese features make LIC’s Amritbaal Plan a structured savings plan aimed at securing the financial future of your child, particularly for educational needs. \n\n[Source: 102294- Amritbaal Sales Brochure_MAR 25.pdf]"
+      },
+      {
+        "query": "Who is eligible for LIC’s Amritbaal Plan, and what are the minimum and maximum age limits?",
+        "expected": "The plan can be purchased for children aged 30 days to 13 years at entry, with a maturity age of 18 to 25 years. The minimum policy term is 5 years for single premium and 10 years for limited premium payment options, while the maximum term is 25 years. The minimum Basic Sum Assured is ₹2,00,000, with no upper limit subject to underwriting approval. ",
+        "plan": "nan",
+        "latency": 1.681990385055542,
+        "retrieved_docs": [
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.9009,
+            "text_preview": "[Policy Term|P12]       •                                               Maximum Policy Term: 20 years.\n      •                                               Maximum Sum Assured on Death (per life): Rs 25 Lakhs.\n            LIC  ’s       Amritbaal       plan       falls       under       the       ca",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.886,
+            "text_preview": "[Annuity|P2] \n                     LIC ’s Amritbaal (UIN: 512N365V02)(A Non – Par, Non-Linked,\n                               Life, Individual, Savings Plan)\nLIC’s Amritbaal          is          a,          Non-Par,          Non-Linked,          Life,          Individual,\nSavings          plan.     ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.1,
+            "text_preview": "[Eligibility|P3] (Continued from 2.                                                   ELIGIBILITY CONDITIONS & OTHER RESTRICTIONS:)\n         ii.                                                Minimum and                                                 Premium                                         ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.0702,
+            "text_preview": "[Eligibility|P3] \n         ii.                                                Minimum and                                                 Premium                                                    Minimum                                                   Maximum  Age at\n                             ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.0151,
+            "text_preview": "[Eligibility|P3]                                    45 years (Age Nearer Birthday)\n                                   for Policy Term 25 years\n                                   65 years (Age Nearer Birthday)\n                                   minus Policy Term (in case of\n                          ",
+            "section_type": "eligibility"
+          }
+        ],
+        "top_score": 0.9009310603141785,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to determine the specific eligibility criteria, including the minimum and maximum age limits, for LIC’s Amritbaal Plan. The context provided does not include these details."
+      },
+      {
+        "query": "What is the minimum and maximum age at entry for LIC’s Amritbaal plan?",
+        "expected": "The minimum age at entry is 30 days, and the maximum age at entry is 13 years (last birthday). ",
+        "plan": "nan",
+        "latency": 1.5578796863555908,
+        "retrieved_docs": [
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.9904,
+            "text_preview": "[Policy Term|P12]       •                                               Maximum Policy Term: 20 years.\n      •                                               Maximum Sum Assured on Death (per life): Rs 25 Lakhs.\n            LIC  ’s       Amritbaal       plan       falls       under       the       ca",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.936,
+            "text_preview": "[Eligibility|P3]    c)                                                Maximum Age at entry                                                                                         : [70] years (nearer\n                                                                                                    ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.9159,
+            "text_preview": "[Eligibility|P3] \n         ii.                                                Minimum and                                                 Premium                                                    Minimum                                                   Maximum  Age at\n                             ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.9016,
+            "text_preview": "[Eligibility|P2]                      a)                                           Minimum Age at entry                                                             :\t[18]\tyears\t(Last\tBirthday)\n                     b)                                         Maximum Age at entry                       ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.8758,
+            "text_preview": "[Eligibility|P5]                                                                                                                                           per             the             Board             Approved\n\n            ii.                                                   Minimum Age at Entr",
+            "section_type": "eligibility"
+          }
+        ],
+        "top_score": 0.9903766512870789,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to determine the minimum and maximum age at entry for LIC’s Amritbaal plan."
+      },
+      {
+        "query": "What is the guaranteed addition under LIC’s Amritbaal plan?",
+        "expected": "Rs. 80 per thousand Basic Sum Assured is added at the end of each policy year for the in-force policy term. ",
+        "plan": "nan",
+        "latency": 3.5938501358032227,
+        "retrieved_docs": [
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.9995,
+            "text_preview": "[Annuity|P2] \n                     LIC ’s Amritbaal (UIN: 512N365V02)(A Non – Par, Non-Linked,\n                               Life, Individual, Savings Plan)\nLIC’s Amritbaal          is          a,          Non-Par,          Non-Linked,          Life,          Individual,\nSavings          plan.     ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.9667,
+            "text_preview": "[Sum Assured|P5] •                                                                              Rs. 50 per thousand Basic Sum Assured for first five years\n•                                                                              Rs.    55    per    thousand    Basic    Sum    Assured    from   ",
+            "section_type": "sum_assured"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.9376,
+            "text_preview": "[Policy Term|P12]       •                                               Maximum Policy Term: 20 years.\n      •                                               Maximum Sum Assured on Death (per life): Rs 25 Lakhs.\n            LIC  ’s       Amritbaal       plan       falls       under       the       ca",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.8181,
+            "text_preview": "[Sum Assured|P5]       Assured on Maturity ” is equal the Basic Sum Assured.\nC.                                                   Guaranteed         Additions        for         In-force         policy:         Under         an         in-\n      force  policy,  the  Guaranteed  Additions  shall  acc",
+            "section_type": "sum_assured"
+          },
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.2928,
+            "text_preview": "[Benefits|P5]                                                         25                                                                                                                                                                                                                                    ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9995074272155762,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "Under LIC’s Amritbaal plan, the Guaranteed Additions accrue at the rate of Rs. 80 per thousand Basic Sum Assured at the end of each policy year from the inception till the end of the Policy Term. These additions are applicable for in-force policies. In the event of the death of the Life Assured during the Policy Term, the Guaranteed Additions for the full policy year are payable. Additionally, if the policy is surrendered, the Guaranteed Additions for that policy year will be added on a proportionate basis, depending on the completed months of the Policy Year in which the policy is surrendered [Source: 102294- Amritbaal Sales Brochure_MAR 25.pdf]."
+      },
+      {
+        "query": "What different types of whole life plans do you have?",
+        "expected": "1.LIC's Jeevan Umang \n2.LIC's Jeevan Utsav",
+        "plan": "Whole life Plan",
+        "latency": 2.650176525115967,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.0036,
+            "text_preview": "[Annuity|P2]                                                    The available annuity options under this plan are as under:\n                                                   Option A                                                                                                                     ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.0033,
+            "text_preview": "[Policy Term|P1]   Endowment\n   Plan Sales\n    Brochure\n\n\n\n\n            LIC’s SINGLE PREMIUM ENDOWMENT\n                                                                       PLAN (UIN: 512N283V03)\n                                                  (A Par, Non-Linked, Life, Individual,\n               ",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.0013,
+            "text_preview": "[Annuity|P2] •                                                   Flexibility to choose from Single Life Annuity and Joint Life\n       Annuity Options\n•                                                   Mode  of  Annuity  payments  -  yearly,  half-yearly,  quarterly\n       and monthly\n•             ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.0001,
+            "text_preview": "[Benefits|P20]                                                                                                                                                                                                                                                                                              ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.0001,
+            "text_preview": "[Annuity|P25]                                                                                                                                                                                                                Amount (Rs.)\n        Option-A                                                  ",
+            "section_type": "annuity"
+          }
+        ],
+        "top_score": 0.0035503944382071495,
+        "is_relevant": false,
+        "failure_reason": "LOW_SIMILARITY",
+        "generated_answer": "I don't have sufficient information in the provided documents to list different types of whole life plans. The documents provided focus on annuity options and endowment plans, but do not specifically mention whole life plans."
+      },
+      {
+        "query": "What are the key benefits of LIC’s Jeevan Umang plan?",
+        "expected": "LIC’s Jeevan Umang is a Par, non-linked, whole life insurance plan offering a combination of protection and income: \nDeath Benefit: On death of the Life Assured, higher of Basic Sum Assured or 7× annualized premium, plus vested Simple Reversionary Bonuses and Final Additional Bonus. Minimum 105% of total premiums paid. \nSurvival Benefit: Annual payment equal to 8% of Basic Sum Assured from the end of the premium paying term until maturity or death. \nMaturity Benefit: Basic Sum Assured plus veste",
+        "plan": "nan",
+        "latency": 4.64162278175354,
+        "retrieved_docs": [
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.9974,
+            "text_preview": "[Benefits|P2] \n                LIC ’s Jeevan Utsav (UIN: 512N363V02)\n                   (A Non-Par, Non-Linked, Individual,\n                   Savings, Whole Life Insurance Plan)\nLIC’s Jeevan Utsav                is                a                Non-Par,                Non-Linked,                I",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.9904,
+            "text_preview": "[Benefits|P18]          extra premiums and any rider premium(s) other than Term Assurance Rider, if any.\n\n                    Distribution Channel:                                             Offline                                                                                                     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.9738,
+            "text_preview": "[Contact|P1] \n                                                                        UIN No.: 512N312V03                                                              PLAN NO: 745\n                                       A Par, Non-Linked, Individual, Savings, Whole Life Insurance Plan\n   Our WhatsApp",
+            "section_type": "contact"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.9373,
+            "text_preview": "[Benefits|P6]            of     Accident     Benefit     Sum     Assured     (excluding     additional\n           limit        of        Rs.100        lakhs        under        policies        taken        under        LIC  ’s\n           Jeevan Shiromani).\n                                           ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "whole_life_plan_type.pdf",
+            "score": 0.642,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          }
+        ],
+        "top_score": 0.9973962306976318,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### Key Benefits of LIC’s Jeevan Umang Plan\n\nLIC’s Jeevan Umang is a Par, Non-Linked, Individual, Savings, Whole Life Insurance Plan. Here are the key benefits:\n\n- **Type of Plan**: \n  - Participating (Par) plan, which means it is eligible for bonuses.\n  - Non-Linked, meaning it is not tied to the stock market.\n\n- **Combination of Income and Protection**:\n  - The plan offers a combination of income and protection to your family.\n\n- **Whole Life Coverage**:\n  - Provides coverage for the entire life of the policyholder.\n\n- **Distribution Channel**:\n  - The plan can be purchased offline through various channels such as licensed agents, corporate agents, brokers, and insurance marketing firms.\n\nFor more detailed information, you may refer to the specific sales brochure or contact LIC directly. [Source: LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf]"
+      },
+      {
+        "query": "Who is eligible for LIC’s Jeevan Umang and what are the policy terms?",
+        "expected": " Eligibility and policy structure: \nMinimum Age at Entry: 30 days; Maximum Age at Entry: 55 years (15-year PPT), 50 years (20-year), 45 years (25-year), 40 years (30-year). \nPremium Paying Term (PPT): 15, 20, 25, or 30 years. \nPolicy Term: Whole life (100 – age at entry). \nMinimum Age at End of PPT: 18 years; Maximum Age at End of PPT: 70 years. \nPayment Modes: Yearly, half-yearly, quarterly, monthly (via NACH), or salary deduction. \nGrace Period: 30 days for yearly/half-yearly/quarterly premium",
+        "plan": "nan",
+        "latency": 3.561612367630005,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.9935,
+            "text_preview": "[Benefits|P18]          extra premiums and any rider premium(s) other than Term Assurance Rider, if any.\n\n                    Distribution Channel:                                             Offline                                                                                                     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.9895,
+            "text_preview": "[Benefits|P2] \n                LIC ’s Jeevan Utsav (UIN: 512N363V02)\n                   (A Non-Par, Non-Linked, Individual,\n                   Savings, Whole Life Insurance Plan)\nLIC’s Jeevan Utsav                is                a                Non-Par,                Non-Linked,                I",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.9555,
+            "text_preview": "[Contact|P1] \n                                                                        UIN No.: 512N312V03                                                              PLAN NO: 745\n                                       A Par, Non-Linked, Individual, Savings, Whole Life Insurance Plan\n   Our WhatsApp",
+            "section_type": "contact"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.8285,
+            "text_preview": "[Benefits|P6]            of     Accident     Benefit     Sum     Assured     (excluding     additional\n           limit        of        Rs.100        lakhs        under        policies        taken        under        LIC  ’s\n           Jeevan Shiromani).\n                                           ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "whole_life_plan_type.pdf",
+            "score": 0.8222,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          }
+        ],
+        "top_score": 0.9935356378555298,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to determine the specific eligibility criteria and policy terms for LIC’s Jeevan Umang. The documents mention that LIC’s Jeevan Umang is a \"Par, Non-Linked, Individual, Savings, Whole Life Insurance Plan\" [Source: LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf], but they do not provide detailed eligibility criteria or policy terms. For comprehensive details, you may need to refer to the full policy brochure or contact LIC directly."
+      },
+      {
+        "query": "What are the key benefits of LIC’s Jeevan Utsav plan?",
+        "expected": "LIC’s Jeevan Utsav is a Non-Par, Non-Linked, Whole Life Insurance plan offering guaranteed, fixed benefits: \nDeath Benefit: On death of the Life Assured after commencement of risk, higher of Basic Sum Assured or 7× annualized premium, plus accrued Guaranteed Additions. Minimum 105% of total premiums paid. \nSurvival Benefit: Two options at inception: \nRegular Income Benefit: 10% of Basic Sum Assured paid annually from the start year based on Premium Paying Term. \nFlexi Income Benefit: 10% of Basi",
+        "plan": "nan",
+        "latency": 4.238649606704712,
+        "retrieved_docs": [
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.9994,
+            "text_preview": "[Benefits|P2] \n                LIC ’s Jeevan Utsav (UIN: 512N363V02)\n                   (A Non-Par, Non-Linked, Individual,\n                   Savings, Whole Life Insurance Plan)\nLIC’s Jeevan Utsav                is                a                Non-Par,                Non-Linked,                I",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.9415,
+            "text_preview": "[Benefits|P18]          extra premiums and any rider premium(s) other than Term Assurance Rider, if any.\n\n                    Distribution Channel:                                             Offline                                                                                                     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.8758,
+            "text_preview": "[Contact|P1] \n                                                                        UIN No.: 512N312V03                                                              PLAN NO: 745\n                                       A Par, Non-Linked, Individual, Savings, Whole Life Insurance Plan\n   Our WhatsApp",
+            "section_type": "contact"
+          },
+          {
+            "source": "whole_life_plan_type.pdf",
+            "score": 0.7032,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.5281,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9993891716003418,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### Key Benefits of LIC’s Jeevan Utsav Plan\n\nLIC’s Jeevan Utsav is a **Non-Par, Non-Linked, Individual, Savings, Whole Life Insurance Plan**. Here are the key benefits of this plan:\n\n- **Financial Support**: Provides financial support to the family in case of the unfortunate death of the Life Assured.\n  \n- **Survival Benefits**: Offers survival benefits in the form of:\n  - **Regular Income Benefit**: A consistent income stream for the policyholder.\n  - **Flexi Income Benefit**: A flexible income option as per the policyholder's choice.\n\n- **Guaranteed Benefits**: The benefits payable on death or survival are guaranteed and fixed, irrespective of actual experience. This means the policy is not entitled to discretionary benefits like bonuses or a share in surplus.\n\n- **Distribution Channel**: This plan can be purchased offline through licensed agents, corporate agents, brokers, and insurance marketing firms.\n\nThese features make LIC’s Jeevan Utsav a reliable option for individuals seeking a whole life insurance plan with guaranteed benefits. \n\n[Source: 102268- Jeevan Utsav Sales Brochure.pdf]"
+      },
+      {
+        "query": "Who is eligible for LIC’s Jeevan Utsav and what are the policy terms?",
+        "expected": "Eligibility and policy structure: \nAge at Entry: 30 days – 65 years (depending on PPT); Maximum Premium Ceasing Age: 75 years. \nPremium Paying Term (PPT): 5–16 years. \nMinimum Basic Sum Assured: ₹5,00,000; Maximum: No limit (subject to underwriting). \nPolicy Start & Risk Commencement: Immediate for age ≥8; for minors <8 years, either 2 years from start or on turning 8. \nOptions: Death Benefit in lump sum or instalments (5, 10, 15 years), choice between Regular Income or Flexi Income for survival",
+        "plan": "nan",
+        "latency": 3.747650146484375,
+        "retrieved_docs": [
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.9981,
+            "text_preview": "[Benefits|P2] \n                LIC ’s Jeevan Utsav (UIN: 512N363V02)\n                   (A Non-Par, Non-Linked, Individual,\n                   Savings, Whole Life Insurance Plan)\nLIC’s Jeevan Utsav                is                a                Non-Par,                Non-Linked,                I",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.9864,
+            "text_preview": "[Annuity|P2] \n             LIC ’s Jeevan Akshay-VII (UIN: 512N337V07)\n                 (A Non-Par, Non-Linked, Individual, Savings,\n\n                                                      LIC  ’s                    Jeevan                    Akshay                    -                    VII          ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.9771,
+            "text_preview": "[Benefits|P18]          extra premiums and any rider premium(s) other than Term Assurance Rider, if any.\n\n                    Distribution Channel:                                             Offline                                                                                                     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.8883,
+            "text_preview": "[Benefits|P6]            of     Accident     Benefit     Sum     Assured     (excluding     additional\n           limit        of        Rs.100        lakhs        under        policies        taken        under        LIC  ’s\n           Jeevan Shiromani).\n                                           ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "whole_life_plan_type.pdf",
+            "score": 0.8616,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          }
+        ],
+        "top_score": 0.9980962872505188,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to determine the eligibility criteria and specific policy terms for LIC’s Jeevan Utsav. The documents provided do not include details about eligibility requirements such as age limits, health conditions, or other criteria. For comprehensive information, I recommend contacting LIC directly or consulting the full policy brochure."
+      },
+      {
+        "query": "What different types of money back plans do you have?",
+        "expected": "1.LIC's Bima Shree\n2.LIC's New Money Back Plan – 20 Years\n3.LIC's New Money Back Plan – 25 years\n4.LIC's New Children's Money Back Plan\n5.LIC's Jeevan Tarun\n6.LIC's Bima Ratna",
+        "plan": "MoneyBack Plan",
+        "latency": 7.553899049758911,
+        "retrieved_docs": [
+          {
+            "source": "moneyback_plan_types.pdf",
+            "score": 0.7255,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          },
+          {
+            "source": "Lic NEW Jeevan Shanti  2025 _Eng_Singal page 21.08.2025.pdf",
+            "score": 0.0057,
+            "text_preview": "[Premium|P2]                                                           •                             Single Premium Deferred Annuity plan\n                                                          •                             Two annuity options to suit your needs\n                                   ",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.003,
+            "text_preview": "[Benefits|P20]                                                                                                                                                                                                                                                                                              ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.0015,
+            "text_preview": "[Fund|P2]                    best suits theirneeds such as under annuities, ULIPs etc.\n                                                 Key Features\n                                                              •                             The plan provides for protection and savings.\n             ",
+            "section_type": "fund"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.0012,
+            "text_preview": "[General|P1] \n       LIC     ’s\n  Bima Shree\nSales Brochure\n\n\n\n\n                                               LIC  ’s Bima Shree\n                                           (UIN: 512N316V03)\n  (A Par, Non-Linked, Life, Individual, Savings Plan)\nLIC  ’s       Bima       Shree       plan       offers ",
+            "section_type": "general"
+          }
+        ],
+        "top_score": 0.7255319952964783,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "Based on the provided context, LIC offers several types of Money Back Plans. Here is a list of the available plans:\n\n1. **LIC's Bima Shree**\n   - **Plan No.:** 748\n   - **UIN No.:** 512N316V03\n   - **Description:** A plan designed for high net-worth individuals, offering a combination of protection and savings with periodic payments during the policy term and a lump sum at maturity. [Source: moneyback_plan_types.pdf]\n\n2. **LIC's New Money Back Plan - 20 Years**\n   - **Plan No.:** 720\n   - **UIN No.:** 512N280V03\n   - **Description:** A traditional money back plan with a 20-year term. [Source: moneyback_plan_types.pdf]\n\n3. **LIC's New Money Back Plan - 25 Years**\n   - **Plan No.:** 721\n   - **UIN No.:** 512N278V03\n   - **Description:** A traditional money back plan with a 25-year term. [Source: moneyback_plan_types.pdf]\n\n4. **LIC's New Children's Money Back Plan**\n   - **Plan No.:** 732\n   - **UIN No.:** 512N296V03\n   - **Description:** A plan specifically designed for children, providing money back benefits at specified intervals. [Source: moneyback_plan_types.pdf]\n\n5. **LIC's Jeevan Tarun**\n   - **Plan No.:** 734\n   - **UIN No.:** 512N299V03\n   - **Description:** A plan aimed at providing financial support for children's education and other needs. [Source: moneyback_plan_types.pdf]\n\nThese plans cater to different needs and durations, offering flexibility and financial security through periodic payouts and maturity benefits."
+      },
+      {
+        "query": "What is LIC’s Bima Shree plan, who is it designed for, and what core benefits does it offer during the policy term and at maturity?",
+        "expected": "LIC’s Bima Shree is a Participating, Non-Linked, Life, Individual Savings Plan designed primarily for High Net-worth Individuals. It combines life insurance protection with long-term savings. The plan provides financial support to the family in case of the policyholder’s death during the policy term, periodic survival benefits at specified durations during the term, and a lump sum maturity benefit payable at the end of the policy term. It also offers options such as limited premium payment, ride",
+        "plan": "nan",
+        "latency": 5.86257791519165,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.9993,
+            "text_preview": "[General|P1] \n       LIC     ’s\n  Bima Shree\nSales Brochure\n\n\n\n\n                                               LIC  ’s Bima Shree\n                                           (UIN: 512N316V03)\n  (A Par, Non-Linked, Life, Individual, Savings Plan)\nLIC  ’s       Bima       Shree       plan       offers ",
+            "section_type": "general"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.9908,
+            "text_preview": "[General|P2] \n                                                  LIC  ’s Bima Ratna\n                                            (UIN: 512N345V02)\n                 (A Non-Par, Non-Linked, Life, Individual, Savings Plan)\n                          LIC’s Bima Ratna is a Non-Par, Non-Linked, Life,\n       ",
+            "section_type": "general"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.9724,
+            "text_preview": "[General|P2] \n                                                LIC ’s Bima Kavach\n                                             (UIN: 512N360V01)\n         (A Non-Par, Non-linked, Life, Individual, Pure Risk Plan)\nLIC ’s Bima Kavach  is  a  Non-Par,  Non-Linked,  Life,  Individual,\nPure        Risk    ",
+            "section_type": "general"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.7633,
+            "text_preview": "[Benefits|P20]                                                Distribution Channel:                                                                                                                                                                                                                         ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.47,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9993112087249756,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### LIC’s Bima Shree Plan\n\n**Overview:**\n- **Type:** A Par, Non-Linked, Life, Individual, Savings Plan\n- **UIN:** 512N316V03\n- **Target Audience:** High Net-worth Individuals\n\n**Core Benefits:**\n- **Protection and Savings:** The plan offers a combination of protection and savings, ensuring financial security for the policyholder's family in case of the policyholder's unfortunate death during the policy term.\n- **Periodic Payments:** The policy provides periodic payments to the policyholder at specified durations during the policy term, aiding in meeting various financial needs.\n- **Maturity Benefit:** A lump sum payment is made to the surviving policyholder at the time of maturity, providing a significant financial benefit at the end of the policy term.\n\n**Distribution:**\n- The plan can be purchased offline through licensed agents, corporate agents, brokers, and insurance marketing firms.\n\n[Source: LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf]"
+      },
+      {
+        "query": "How is the death benefit calculated under LIC’s Bima Shree, and how does it differ if death occurs within the first five policy years versus later?",
+        "expected": "Under LIC’s Bima Shree, the death benefit depends on the policy duration completed at the time of death: \n- If death occurs during the first five policy years, the payable death benefit is the Sum Assured on Death plus accrued Guaranteed Additions. \n- If death occurs after completion of five policy years but before maturity, the death benefit includes the Sum Assured on Death, accrued Guaranteed Additions, and Loyalty Addition (if any). \n- The Sum Assured on Death is defined as the higher of 125",
+        "plan": "nan",
+        "latency": 4.305433511734009,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.864,
+            "text_preview": "[General|P1] \n       LIC     ’s\n  Bima Shree\nSales Brochure\n\n\n\n\n                                               LIC  ’s Bima Shree\n                                           (UIN: 512N316V03)\n  (A Par, Non-Linked, Life, Individual, Savings Plan)\nLIC  ’s       Bima       Shree       plan       offers ",
+            "section_type": "general"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.8334,
+            "text_preview": "[Benefits|P5]            policy  year  and  onwards,  the  Absolute  amount  assured\n           to be paid on death will be 2X.\n                                                                                  The               Death               Benefit               Option               once     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.8199,
+            "text_preview": "[Policy Term|P4]            assured                   during                   the                   policy                   term                   after                   the                   date                   of\n           commencement of risk but before the date of maturity,\n           pro",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.7544,
+            "text_preview": "[Benefits|P9] The      Rider      Sum      Assured      in      respect      of      LIC’s      Accident      Benefit\nRider  shall  not  exceed  three  times  of  Sum  Assured  on  Death\nunder the Base product. Any benefit arising under each of all\nother      riders      shall      not      exceed  ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.748,
+            "text_preview": "[Benefits|P4]                                   LIC  ’s Premium Waiver Benefit Rider is opted for, in the\n                                  event       of       death       of       Proposer,       any       subsequent       Premi-\n                                  ums which are waived shall be deem",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.8640241026878357,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to specifically detail how the death benefit is calculated under LIC’s Bima Shree plan, or how it differs if death occurs within the first five policy years versus later. The provided context does not include specific details on the death benefit calculation for this plan."
+      },
+      {
+        "query": "What survival benefits and maturity benefits are payable under LIC’s Bima Shree for different policy terms?",
+        "expected": "LIC’s Bima Shree provides fixed survival benefits payable at specified policy anniversaries during the policy term, provided all due premiums have been paid. The survival benefit is a percentage of the Basic Sum Assured, which varies by policy term. For example: \nFor a 14-year policy term, 30% of the Basic Sum Assured is paid on the 10th and 12th policy anniversaries. \nFor 18 years, 40% is paid on the 14th and 16th policy anniversaries. \nFor 20, 24, and 28 years, 45% is paid at the respective sp",
+        "plan": "nan",
+        "latency": 3.850316047668457,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.997,
+            "text_preview": "[General|P1] \n       LIC     ’s\n  Bima Shree\nSales Brochure\n\n\n\n\n                                               LIC  ’s Bima Shree\n                                           (UIN: 512N316V03)\n  (A Par, Non-Linked, Life, Individual, Savings Plan)\nLIC  ’s       Bima       Shree       plan       offers ",
+            "section_type": "general"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.9915,
+            "text_preview": "[Benefits|P7]        Maturity    multiplied    by    the    ratio    of    the    total    period    for    which    premiums    have\n       already       been       paid       bears       to       the       maximum       period       for       which       premiums       were\n       originally    pa",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.9909,
+            "text_preview": "[Benefits|P5]            policy  year  and  onwards,  the  Absolute  amount  assured\n           to be paid on death will be 2X.\n                                                                                  The               Death               Benefit               Option               once     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.9572,
+            "text_preview": "[Benefits|P4]                                   LIC  ’s Premium Waiver Benefit Rider is opted for, in the\n                                  event       of       death       of       Proposer,       any       subsequent       Premi-\n                                  ums which are waived shall be deem",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.9162,
+            "text_preview": "[Benefits|P15]                                The    survival    benefits    payable    under    such    a    paid-up\n      policy (where Paid-up Sum Assured is equal to or\n      more than 5 Lakhs) shall be equal to survival benefit\n      payable under in-force policy multiplied by the ratio\n      o",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9969925880432129,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to detail the specific survival benefits and maturity benefits payable under LIC’s Bima Shree for different policy terms. The context provided does not include detailed information about the survival and maturity benefits specific to the Bima Shree plan. For precise details, please refer to the full LIC Bima Shree sales brochure or contact an LIC representative."
+      },
+      {
+        "query": "5.What are the key benefits of LIC’s Bima Ratna plan?",
+        "expected": "LIC’s Bima Ratna is a non-par, non-linked, individual savings plan that provides: \nDeath Benefit: Financial support to the family if the policyholder dies during the policy term, with the higher of 125% of Basic Sum Assured or 7× annualized premium, and minimum 105% of total premiums paid. \nSurvival Benefit: Fixed percentage of Basic Sum Assured paid at specified durations during the policy term. \nMaturity Benefit: Sum Assured on Maturity plus Guaranteed Additions. \nGuaranteed Additions: Accrue ",
+        "plan": "nan",
+        "latency": 7.292295217514038,
+        "retrieved_docs": [
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.9961,
+            "text_preview": "[General|P2] \n                                                  LIC  ’s Bima Ratna\n                                            (UIN: 512N345V02)\n                 (A Non-Par, Non-Linked, Life, Individual, Savings Plan)\n                          LIC’s Bima Ratna is a Non-Par, Non-Linked, Life,\n       ",
+            "section_type": "general"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.989,
+            "text_preview": "[General|P1] \n       LIC     ’s\n  Bima Shree\nSales Brochure\n\n\n\n\n                                               LIC  ’s Bima Shree\n                                           (UIN: 512N316V03)\n  (A Par, Non-Linked, Life, Individual, Savings Plan)\nLIC  ’s       Bima       Shree       plan       offers ",
+            "section_type": "general"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.9561,
+            "text_preview": "[Benefits|P13]              able          Sum          Assured          on          Death          to          each          individual          in\n             respect of all policies under all plans in this cate-\n             gory      of      Non-Linked,      Non-Participating,      Endowment\n   ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.9414,
+            "text_preview": "[General|P2] \n                                                LIC ’s Bima Kavach\n                                             (UIN: 512N360V01)\n         (A Non-Par, Non-linked, Life, Individual, Pure Risk Plan)\nLIC ’s Bima Kavach  is  a  Non-Par,  Non-Linked,  Life,  Individual,\nPure        Risk    ",
+            "section_type": "general"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.6107,
+            "text_preview": "[Contact|P13] IRDAI    applicable    to    POS    Plans    and    POSP-LI.    Currently,    the\nfollowing  restrictions  are  applicable  for  proposal  procured\nthrough POSP-LI and CPSC-SPV:\n      •                                                   Maximum   Age   at   Entry:   65   years   (Age   ",
+            "section_type": "contact"
+          }
+        ],
+        "top_score": 0.9961219429969788,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### Key Benefits of LIC’s Bima Ratna Plan\n\nLIC’s Bima Ratna is a Non-Par, Non-Linked, Life, Individual, Savings Plan that offers a combination of protection and savings. Here are the key benefits:\n\n- **Financial Support on Death**: The plan provides financial support to the family in case of the unfortunate death of the policyholder during the policy term. The benefits payable on death are guaranteed and fixed, irrespective of actual experience [Source: Lic NEW Bima Ratna Broucher sales Brochure.pdf].\n\n- **Periodic Payments on Survival**: The plan offers periodical payments on the survival of the policyholder at specified durations to meet various financial needs [Source: Lic NEW Bima Ratna Broucher sales Brochure.pdf].\n\n- **Guaranteed Benefits**: As a non-par product, the benefits payable on death or survival are guaranteed and fixed, ensuring certainty in the benefits received [Source: Lic NEW Bima Ratna Broucher sales Brochure.pdf].\n\n- **Maximum Sum Assured**: The maximum allowable Sum Assured on Death for each individual is determined by the non-medical limits under this plan, with a cap of ₹25 lakhs if purchased through POSP-LI and CPSC-SPV channels [Source: Lic NEW Bima Ratna Broucher sales Brochure.pdf].\n\n- **Age Restrictions**: The maximum age at entry is 65 years minus the policy term, and the maximum age at maturity is 65 years [Source: Lic NEW Bima Ratna Broucher sales Brochure.pdf].\n\nThese features make LIC’s Bima Ratna a suitable plan for individuals seeking a combination of savings and protection with guaranteed benefits."
+      },
+      {
+        "query": "Who is eligible to buy LIC’s Bima Ratna and what are the entry restrictions?",
+        "expected": " Eligibility depends on age and policy term: \nMinimum Age at Entry: 5 years (15-year term), 30 days (20 & 25-year term). \nMaximum Age at Entry: 55 years (15-year), 50 years (20-year), 45 years (25-year), and 65 years minus policy term for POSP-LI/CPSC-SPV policies. \nPolicy Term: 15, 20, or 25 years. \nPremium Payment Term: 11, 16, or 21 years based on policy term. \nThe policy can be purchased offline via agents or online through LIC’s website. ",
+        "plan": "nan",
+        "latency": 7.029388427734375,
+        "retrieved_docs": [
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.9896,
+            "text_preview": "[Contact|P13] IRDAI    applicable    to    POS    Plans    and    POSP-LI.    Currently,    the\nfollowing  restrictions  are  applicable  for  proposal  procured\nthrough POSP-LI and CPSC-SPV:\n      •                                                   Maximum   Age   at   Entry:   65   years   (Age   ",
+            "section_type": "contact"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.7846,
+            "text_preview": "[General|P2] \n                                                  LIC  ’s Bima Ratna\n                                            (UIN: 512N345V02)\n                 (A Non-Par, Non-Linked, Life, Individual, Savings Plan)\n                          LIC’s Bima Ratna is a Non-Par, Non-Linked, Life,\n       ",
+            "section_type": "general"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.5183,
+            "text_preview": "[Benefits|P13]              able          Sum          Assured          on          Death          to          each          individual          in\n             respect of all policies under all plans in this cate-\n             gory      of      Non-Linked,      Non-Participating,      Endowment\n   ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.3129,
+            "text_preview": "[General|P1] \n       LIC     ’s\n  Bima Shree\nSales Brochure\n\n\n\n\n                                               LIC  ’s Bima Shree\n                                           (UIN: 512N316V03)\n  (A Par, Non-Linked, Life, Individual, Savings Plan)\nLIC  ’s       Bima       Shree       plan       offers ",
+            "section_type": "general"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.1867,
+            "text_preview": "[Premium|P22]       Instalment Premium:                                   112,258                           (Instalment Premium for Amount of\n                                                                                                                                                              ",
+            "section_type": "premium"
+          }
+        ],
+        "top_score": 0.9895527362823486,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### Eligibility and Entry Restrictions for LIC’s Bima Ratna\n\nLIC’s Bima Ratna is a Non-Participating, Non-Linked, Life, Individual, Savings Plan. Here are the eligibility criteria and entry restrictions for purchasing this plan:\n\n#### Eligibility:\n- **Plan Type**: Non-Linked, Non-Participating, Endowment category.\n- **Purchase Channels**: Can be purchased through POSP-LI (Point of Sales Person-Life Insurance) or CPSC-SPV (Common Public Service Centre-Special Purpose Vehicle).\n\n#### Entry Restrictions:\n- **Maximum Age at Entry**: 65 years (Age Nearer Birthday) minus the Policy Term.\n- **Maximum Age at Maturity**: 65 years (Age Nearer Birthday).\n- **Maximum Sum Assured on Death**: ₹25 Lakhs per life for policies purchased through POSP-LI and CPSC-SPV channels.\n- **Riders**: No riders are available for policies procured through POSP-LI/CPSC-SPV.\n\nThese restrictions ensure that the plan is accessible to a wide range of individuals while maintaining specific limits on age and coverage. The plan is designed to provide both protection and savings, with guaranteed benefits on death or survival, irrespective of actual experience. \n\n[Source: Lic NEW Bima Ratna Broucher sales Brochure.pdf]"
+      },
+      {
+        "query": "What different types of term assurance plans do you have?",
+        "expected": "1.LIC's Digi Term\n2.LIC's Digi Credit Life\n3.LIC's Yuva Credit Life\n4.LIC's Yuva Term\n5.LIC's New Tech-Term\n6.LIC's New Jeevan Amar\n7.LIC's Saral Jeevan Bima\n8.LIC's Bima Kavach",
+        "plan": "Term Assurance Plan",
+        "latency": 8.71968412399292,
+        "retrieved_docs": [
+          {
+            "source": "whole_life_plan_type.pdf",
+            "score": 0.3589,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          },
+          {
+            "source": "term_insurance_plan_types.pdf",
+            "score": 0.0671,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          },
+          {
+            "source": "moneyback_plan_types.pdf",
+            "score": 0.0432,
+            "text_preview": "[General|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\n As individuals it is inherent to differ. Each individual's insurance needs and requirements are different\n from that of the others. LIC's Insurance Plans are policies that talk to you individ",
+            "section_type": "general"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.0204,
+            "text_preview": "[Fund|P2]                    best suits theirneeds such as under annuities, ULIPs etc.\n                                                 Key Features\n                                                              •                             The plan provides for protection and savings.\n             ",
+            "section_type": "fund"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.0191,
+            "text_preview": "[Policy Term|P1]   Endowment\n   Plan Sales\n    Brochure\n\n\n\n\n            LIC’s SINGLE PREMIUM ENDOWMENT\n                                                                       PLAN (UIN: 512N283V03)\n                                                  (A Par, Non-Linked, Life, Individual,\n               ",
+            "section_type": "policy_term"
+          }
+        ],
+        "top_score": 0.3588627576828003,
+        "is_relevant": false,
+        "failure_reason": "UNCERTAIN",
+        "generated_answer": "Based on the provided context, here are the different types of term assurance plans offered by LIC:\n\n1. **LIC’s Digi Term**\n   - Plan No.: 876\n   - UIN No.: 512N356V02\n\n2. **LIC’s Digi Credit Life**\n   - Plan No.: 878\n   - UIN No.: 512N358V01\n\n3. **LIC’s Yuva Credit Life**\n   - Plan No.: 877\n   - UIN No.: 512N357V01\n\n4. **LIC’s Yuva Term**\n   - Plan No.: 875\n   - UIN No.: 512N355V02\n\n5. **LIC's New Tech-Term**\n   - Plan No.: 954\n   - UIN No.: 512N351V02\n\n6. **LIC's New Jeevan Amar**\n   - Plan No.: 955\n   - UIN No.: 512N350V02\n\n7. **LIC's Saral Jeevan Bima**\n   - Plan No.: 859\n   - UIN No.: 512N341V01\n\n8. **LIC’s Bima Kavach**\n   - Plan No.: 887\n   - UIN No.: 512N360V01\n\nThese plans are designed to cater to different insurance needs and requirements, providing a range of options for term assurance coverage. [Source: term_insurance_plan_types.pdf]"
+      },
+      {
+        "query": "What type of insurance plan is LIC’s Yuva Credit Life, and how is the death benefit determined over the policy term?",
+        "expected": "LIC’s Yuva Credit Life (UIN: 512N357V01) is a Non-Participating, Non-Linked, Individual, Pure Risk Term Assurance plan designed to provide financial protection against loan repayment in the event of the life assured’s death during the policy term. \nIt is a decreasing term assurance plan, meaning the Sum Assured on Death reduces every policy year as per a predefined Risk Cover Schedule. At policy inception, the Sum Assured on Death is equal to the Basic Sum Assured, and in subsequent years it dec",
+        "plan": "nan",
+        "latency": 9.62521767616272,
+        "retrieved_docs": [
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.9976,
+            "text_preview": "[General|P2] \n                                                                 LIC  ’s Yuva Credit Life\n                                                                    (UIN: 512N357V01)\n                                (A Non-Par, Non-Linked, Life, Individual, Pure Risk Plan)\n                    ",
+            "section_type": "general"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.8301,
+            "text_preview": "[Benefits|P4]                                   LIC  ’s Premium Waiver Benefit Rider is opted for, in the\n                                  event       of       death       of       Proposer,       any       subsequent       Premi-\n                                  ums which are waived shall be deem",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.8054,
+            "text_preview": "[Benefits|P5]            policy  year  and  onwards,  the  Absolute  amount  assured\n           to be paid on death will be 2X.\n                                                                                  The               Death               Benefit               Option               once     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.7322,
+            "text_preview": "[Policy Term|P4]            assured                   during                   the                   policy                   term                   after                   the                   date                   of\n           commencement of risk but before the date of maturity,\n           pro",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.7104,
+            "text_preview": "[Benefits|P5]         30% of premiums under the base plan.\n                                                  The    Rider    Sum    Assured    in    respect    of    LIC ’s    Accident    Benefit    Rider    shall    not    exceed\n        three times of Basic Sum Assured under the Base product. Any ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9976263642311096,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### LIC’s Yuva Credit Life Plan\n\n**Type of Plan:**\n- LIC’s Yuva Credit Life is a **Non-Par, Non-Linked, Life, Individual, Pure Risk Plan**. This means it is a pure risk cover plan without any participation in profits or linkage to market investments. It is designed to provide a safety net specifically for loan repayment in the event of the insured's death during the policy term. [Source: Lic leaflet Yuva Credit 4x9 inches wxh.pdf]\n\n**Death Benefit:**\n- The plan is a **pure decreasing Term Assurance plan**. This implies that the death benefit decreases over the policy term, aligning with the decreasing liability of a loan. The primary purpose is to cover the outstanding loan amount, ensuring that the insured's family is not burdened with loan repayment in case of the insured's unfortunate death. [Source: Lic leaflet Yuva Credit 4x9 inches wxh.pdf]\n\nThis plan is available for purchase offline through licensed agents, corporate agents, brokers, and insurance marketing firms."
+      },
+      {
+        "query": "What premium payment options and eligibility conditions apply under LIC’s Yuva Credit Life, and is any maturity benefit payable?",
+        "expected": "LIC’s Yuva Credit Life offers two premium payment options: \nSingle Premium, paid once at policy inception \nLimited Premium Payment, where premiums are paid for a chosen premium paying term with yearly or half-yearly modes \nThe minimum age at entry is 18 years, and the maximum age at entry is 45 years, with a maximum maturity age of 75 years. The minimum Basic Sum Assured is ₹50,00,000, with a reduced minimum of ₹20,00,000 allowed for eligible borrowers aged 21 to 45 years based on sanctioned loa",
+        "plan": "nan",
+        "latency": 13.64630675315857,
+        "retrieved_docs": [
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.8664,
+            "text_preview": "[Benefits|P4]                                   LIC  ’s Premium Waiver Benefit Rider is opted for, in the\n                                  event       of       death       of       Proposer,       any       subsequent       Premi-\n                                  ums which are waived shall be deem",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.8538,
+            "text_preview": "[Eligibility|P4] Premiums can be paid either under Limited Premium or Single Premium\npayment\t        options\t                                   under\t                                         this\t                          plan.\t                                   In\t               case\t              ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.7341,
+            "text_preview": "[General|P2] \n                                                                 LIC  ’s Yuva Credit Life\n                                                                    (UIN: 512N357V01)\n                                (A Non-Par, Non-Linked, Life, Individual, Pure Risk Plan)\n                    ",
+            "section_type": "general"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.7207,
+            "text_preview": "[Eligibility|P2]             Premium                   subject                   to                   Age                   at                   entry                   as                   specified                   in\n            Para 1 below.\n                                                  Am",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.6894,
+            "text_preview": "[Premium|P4]            benefit      cover      under      this      rider      shall      be      available      during\n           the policy term. If this rider is opted for, an amount equal\n           to   ‘Term   Rider   Sum   Assured   on   Death’   shall   be   payable\n           on death of t",
+            "section_type": "premium"
+          }
+        ],
+        "top_score": 0.8663797974586487,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### LIC’s Yuva Credit Life: Premium Payment Options and Eligibility\n\n#### Premium Payment Options\n- **Limited Premium Payment**: \n  - Premiums can be paid regularly during the Premium Paying Term.\n  - Modes of payment include yearly or half-yearly.\n  - Minimum instalment premium for Limited Premium policies:\n    - ₹3,000 generally.\n    - ₹2,400 for Basic Sum Assured between ₹20,00,000 and less than ₹50,00,000.\n\n- **Single Premium Payment**:\n  - Minimum premium is ₹13,000.\n  - For Basic Sum Assured between ₹20,00,000 and less than ₹50,00,000, the minimum premium is ₹8,040.\n\n#### Eligibility Conditions\n- The premium payable depends on several factors:\n  - Age at entry of the life to be assured.\n  - Smoking status.\n  - Policy term.\n  - Premium paying term.\n  - Basic Sum Assured.\n  - Interest rate chosen (e.g., 7% or 8% if a loan is taken at 7.25%).\n\n#### Maturity Benefit\n- **Maturity Benefit**: There is no maturity benefit payable under LIC’s Yuva Credit Life plan. It is a pure risk plan designed to provide a safety net against loan repayment in case of the insured's death during the policy term. This plan does not participate in profits and does not offer any maturity benefits. \n\n[Source: Lic leaflet Yuva Credit 4x9 inches wxh.pdf]"
+      },
+      {
+        "query": "What death benefit options are available under LIC’s Bima Kavach, and how does the Increasing Sum Assured option work over the policy term?",
+        "expected": "LIC’s Bima Kavach offers two Death Benefit options: \nOption I – Level Sum Assured: \nThe Absolute amount assured to be paid on death remains equal to the Basic Sum Assured throughout the policy term. If the Life Stage Option is exercised, the Basic Sum Assured increases based on specified life events and becomes effective from the applicable policy anniversary after acceptance by LIC. \nOption II – Increasing Sum Assured: \nThe Absolute amount assured to be paid on death remains equal to the Basic ",
+        "plan": "nan",
+        "latency": 7.602368116378784,
+        "retrieved_docs": [
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.9648,
+            "text_preview": "[Benefits|P5]            policy  year  and  onwards,  the  Absolute  amount  assured\n           to be paid on death will be 2X.\n                                                                                  The               Death               Benefit               Option               once     ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.9619,
+            "text_preview": "[Benefits|P9] The      Rider      Sum      Assured      in      respect      of      LIC’s      Accident      Benefit\nRider  shall  not  exceed  three  times  of  Sum  Assured  on  Death\nunder the Base product. Any benefit arising under each of all\nother      riders      shall      not      exceed  ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.9442,
+            "text_preview": "[Benefits|P5]         30% of premiums under the base plan.\n                                                  The    Rider    Sum    Assured    in    respect    of    LIC ’s    Accident    Benefit    Rider    shall    not    exceed\n        three times of Basic Sum Assured under the Base product. Any ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.9378,
+            "text_preview": "[Benefits|P13]              able          Sum          Assured          on          Death          to          each          individual          in\n             respect of all policies under all plans in this cate-\n             gory      of      Non-Linked,      Non-Participating,      Endowment\n   ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.9367,
+            "text_preview": "[General|P2] \n                                                LIC ’s Bima Kavach\n                                             (UIN: 512N360V01)\n         (A Non-Par, Non-linked, Life, Individual, Pure Risk Plan)\nLIC ’s Bima Kavach  is  a  Non-Par,  Non-Linked,  Life,  Individual,\nPure        Risk    ",
+            "section_type": "general"
+          }
+        ],
+        "top_score": 0.9648013114929199,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### Death Benefit Options under LIC’s Bima Kavach\n\n1. **Death Benefit Option**:\n   - The death benefit option, once chosen, cannot be changed later. This ensures that the policyholder's decision at the inception of the policy remains consistent throughout the policy term. [Source: LIC Bima Kavach Sales Brochure Eng_03122025.pdf]\n\n2. **Increasing Sum Assured**:\n   - From the second policy year onwards, the absolute amount assured to be paid on death will be twice the initial sum assured. This means that the death benefit effectively doubles from the second year of the policy term. [Source: LIC Bima Kavach Sales Brochure Eng_03122025.pdf]\n\n### Additional Information\n\n- **Maturity Benefit**: There is no maturity benefit payable under this plan. [Source: LIC Bima Kavach Sales Brochure Eng_03122025.pdf]\n\n- **Rider Benefit**: Policyholders have the option to avail of LIC’s Accident Benefit Rider by paying an additional premium. This is available under Regular Premium and Limited Premium payment modes. [Source: LIC Bima Kavach Sales Brochure Eng_03122025.pdf]\n\nThese features make LIC’s Bima Kavach a robust plan for those seeking a pure risk cover with an increasing death benefit over time."
+      },
+      {
+        "query": "What are the different types of unit linked plans do you have?",
+        "expected": "1.LIC's Index Plus\n2.LIC's Nivesh Plus\n3.LIC's SIIP\n4.LIC's New Endowment Plus\n5.LIC's Protection Plus",
+        "plan": "Unit Linked Plans",
+        "latency": 7.4746928215026855,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.9326,
+            "text_preview": "[Fund|P7]                                                                           Option 1: 1.25 times of Single Premium;\n                                                                          Option 2: 10   times of Single Premium\n                                                               ",
+            "section_type": "fund"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.8247,
+            "text_preview": "[Fund|P23]                  policies      offered      under      the      Unit      Linked      Life      Insurance\n                 plans.                   Only                   Fund                   Management                   Charges                   (FMC)                   as\n             ",
+            "section_type": "fund"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.6431,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.1317,
+            "text_preview": "[Annuity|P36]                        of      the      Insurance      Company      and      LIC  ’s      New      Pension\n                       Plus         is         only         the         name         of         the         unit         linked         pension\n                       contract and",
+            "section_type": "annuity"
+          },
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.0096,
+            "text_preview": "[Benefits|P18]           in   the   Unit   Fund   is   not   sufficient   to   recover   the   relevant\n          charges, the policy shall be compulsorily terminated and\n          the         balance         amount         in         the         Unit         Fund,         if         any,         sh",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.932575523853302,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "Based on the provided documents, here are the different types of unit-linked plans mentioned:\n\n1. **LIC Nivesh Plus**:\n   - This plan offers two options for the sum assured:\n     - Option 1: 1.25 times of Single Premium\n     - Option 2: 10 times of Single Premium\n   - The plan includes a Unit Fund where allocated premiums are used to buy units based on the fund type chosen by the policyholder. There are four fund type options available, although the specific types are not detailed in the provided context. Once selected, the option cannot be altered. [Source: LIC_Nivesh Plus _Sales Brochure Eng..pdf]\n\n2. **LIC's New Pension Plus**:\n   - This is a unit-linked pension plan where the investment risk is borne by the policyholder. It is a Non-Par, Linked, Pension, Individual Savings plan designed to build a corpus through systematic savings, which can later be converted into regular income.\n   - The plan does not offer liquidity during the first five years, and benefits are available in the form of annuities, except for commutation as allowed under regulations. [Source: LIC's New Pension Plus Eng Brochure_171025.pdf]\n\nUnfortunately, the specific fund types for these plans are not detailed in the provided context. If you need more detailed information about the fund types, I recommend consulting the full brochures or contacting an LIC representative."
+      },
+      {
+        "query": "What are the key features and benefits of LIC’s Index Plus plan, including life cover, guaranteed additions, refund of mortality charges, investment risk, and liquidity restrictions?",
+        "expected": "LIC’s Index Plus is a Non-Participating, Linked, Regular Premium, Individual Life Insurance plan that provides life insurance cover along with savings throughout the policy term. The key features and benefits include: \nLife insurance cover for the entire policy term. \nRefund of mortality charges related to life insurance cover (excluding extra charges due to underwriting decisions and applicable tax charges) on survival till maturity. \nGuaranteed Additions, calculated as a percentage of the Annu",
+        "plan": "nan",
+        "latency": 8.965539932250977,
+        "retrieved_docs": [
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.9957,
+            "text_preview": "[Benefits|P2] as Online directly through website www.licindia.in.\nKEY FEATURES:\n•                                                   Benefits:\n\t        Life insurance cover throughout the policy term.\n                                                  Refund of mortality charges in respect of life i",
+            "section_type": "benefits"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.9758,
+            "text_preview": "[Surrender|P2] \n                LIC ’s Index Plus (UIN: 512L354V01)\n                                      (A Non-Par Linked,\n                        Life, Individual  Savings Plan)\n  IN        THIS        POLICY,        THE        INVESTMENT        RISK        IN        INVESTMENT\n\n  THE   UNIT   LI",
+            "section_type": "surrender"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.8627,
+            "text_preview": "[Fund|P26]         i)                                 LIC’s                     Index                     Plus                     is                     a                     Unit                     Linked                     Life                     Insurance\n                product,             ",
+            "section_type": "fund"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.568,
+            "text_preview": "[Benefits|P2] as Online directly through website www.licindia.in. However,\nit  is  not  available  for  sale  through  Point  of  Sales  Persons-Life\nInsurance (POSP-LI) / Common Public Service Centers (CPSC-\nSPV).\nKEY FEATURES:\n•                                                   Whole life insuranc",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.5145,
+            "text_preview": "[Benefits|P2]                                                    This       is       a       non-par       product       under       which       benefits       payable\n         on  death  or  survival  are  guaranteed  and  fixed  (as  per  the\n         chosen Annuity Option) irrespective of actual ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9956542253494263,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "Based on the provided context from the LIC Index Plus Sales Brochure, here are the key features and benefits of LIC’s Index Plus plan:\n\n### Key Features and Benefits\n\n- **Life Insurance Cover**: \n  - Provides life insurance cover throughout the policy term. [Source: 101941 LIC_Index Plus Sales Brochure.pdf]\n\n- **Refund of Mortality Charges**:\n  - Refund of mortality charges related to life insurance cover, excluding any extra charges due to underwriting decisions and tax charges on mortality charges, upon survival till maturity. [Source: 101941 LIC_Index Plus Sales Brochure.pdf]\n\n- **Guaranteed Additions**:\n  - Guaranteed additions as a percentage of the annual premium are added to the unit fund at the end of specified policy durations and are used to purchase units. [Source: 101941 LIC_Index Plus Sales Brochure.pdf]\n\n- **Investment Options**:\n  - Flexibility to choose the type of investment fund to invest the premiums according to your risk appetite. [Source: 101941 LIC_Index Plus Sales Brochure.pdf]\n\n- **Basic Sum Assured**:\n  - Option to choose a basic sum assured as 7 or 10 times the annualized premium. [Source: 101941 LIC_Index Plus Sales Brochure.pdf]\n\n### Investment Risk\n\n- **Unit Linked Nature**:\n  - LIC’s Index Plus is a unit-linked life insurance product, which means the premiums paid are subject to investment risks associated with capital markets. The NAVs of the units may fluctuate based on the performance of the fund and market factors. [Source: 101941 LIC_Index Plus Sales Brochure.pdf]\n\n### Liquidity Restrictions\n\n- **No Liquidity in Initial Years**:\n  - The plan does not offer any liquidity during the first five years of the contract. Policyholders cannot completely or partially surrender the unit-linked insurance products until the end of the fifth year. [Source: 101941 LIC_Index Plus Sales Brochure.pdf]\n\nThese features make LIC’s Index Plus a plan that combines life insurance coverage with investment opportunities, while also incorporating certain restrictions and risks typical of unit-linked insurance products."
+      },
+      {
+        "query": "How is the Basic Sum Assured determined under LIC’s Index Plus based on the policyholder’s age at entry, and what are the corresponding age limits?",
+        "expected": "The Basic Sum Assured under LIC’s Index Plus depends on the age at entry and is calculated as a multiple of the Annualized Premium: \nFor policyholders aged 90 days (completed) to 50 years (nearer birthday): \nBasic Sum Assured can be 7 times or 10 times the Annualized Premium. \nFor policyholders aged 51 years to 60 years (nearer birthday): \nBasic Sum Assured is limited to 7 times the Annualized Premium. \nThe maximum age at entry depends on the chosen Basic Sum Assured: \n10 times Annualized Premiu",
+        "plan": "nan",
+        "latency": 2.5695879459381104,
+        "retrieved_docs": [
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.9817,
+            "text_preview": "[Sum Assured|P3]                     e)   Minimum Basic Sum Assured:  50,00,000/-.`\n                                       (However,\tfor\t  eligible\t       lives\t  in\t  the\t   age\t group\t    with\t    Age\t at\t Entry\t from\t   21\n                                       years\t (Last\t Birthday)\t  to\t 45\t  ",
+            "section_type": "sum_assured"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.9731,
+            "text_preview": "[Eligibility|P3]                                                                                                                   ject to underwriting decision as per the Board\n                                                                                                                  Approved",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.9589,
+            "text_preview": "[Sum Assured|P7]                the               portion                of                Basic                Sum                Assured               under                the               Base\n                 Policy  which  is  equal  to  Accident  Benefit  Sum  Assured\n               under the",
+            "section_type": "sum_assured"
+          },
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.9051,
+            "text_preview": "[Eligibility|P3]                                        premium rates shall apply for such age group for Basic Sum Assured from\n                                       `     20,00,000 to `              \t 35,00,000\t                                                                  in\t             multi",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.7939,
+            "text_preview": "[Eligibility|P3] •                                                                              For age at entry of Life Assured less than 50 years: Higher\n           of Basic Sum Assured or 1.25 times of Single premium.\n•                                                                              ",
+            "section_type": "eligibility"
+          }
+        ],
+        "top_score": 0.9817250370979309,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to determine how the Basic Sum Assured is determined under LIC’s Index Plus based on the policyholder’s age at entry, nor the corresponding age limits. The documents provided do not mention LIC's Index Plus plan."
+      },
+      {
+        "query": "What are the premium limits, premium payment modes, policy term options, and maturity age limits under LIC’s Index Plus plan?",
+        "expected": "The premium and policy conditions under LIC’s Index Plus are as follows: \nMinimum Premium (by payment mode): \nYearly: ₹30,000 \nHalf-yearly: ₹15,000 \nQuarterly: ₹7,500 \nMonthly (NACH): ₹2,500 \nPremiums must be paid in specified multiples based on the payment mode. \nMaximum Premium: No limit, subject to underwriting decisions as per LIC’s Board Approved Underwriting Policy. \nPremium Paying Term: Same as the policy term. \nPolicy Term: \nIf Annualized Premium is less than ₹48,000: Minimum 15 years, M",
+        "plan": "nan",
+        "latency": 1.4375743865966797,
+        "retrieved_docs": [
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.7803,
+            "text_preview": "[Surrender|P2] \n                LIC ’s Index Plus (UIN: 512L354V01)\n                                      (A Non-Par Linked,\n                        Life, Individual  Savings Plan)\n  IN        THIS        POLICY,        THE        INVESTMENT        RISK        IN        INVESTMENT\n\n  THE   UNIT   LI",
+            "section_type": "surrender"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.2991,
+            "text_preview": "[Fund|P26]         i)                                 LIC’s                     Index                     Plus                     is                     a                     Unit                     Linked                     Life                     Insurance\n                product,             ",
+            "section_type": "fund"
+          },
+          {
+            "source": "endowment_plan_types.pdf",
+            "score": 0.0486,
+            "text_preview": "[Premium|P1] \nH  o m    e/P ro d ucts/In  su  ra  n  c e       P  la  n  s\n  In su ra  n c e      P la  n s\nAs individuals it is inherent to differ. Each individual's insurance needs and requirements are different\nfrom that of the others. LIC's Insurance Plans are policies that talk to you individua",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.03,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.012,
+            "text_preview": "[Premium|P17]         rebate       of       the       premium       shown       on       the       policy,       nor       shall\n        any person taking out or renewing or continuing a policy\n        accept any rebate, except such rebate as may be allowed\n        in accordance with the published p",
+            "section_type": "premium"
+          }
+        ],
+        "top_score": 0.78033047914505,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to answer your question about the premium limits, premium payment modes, policy term options, and maturity age limits under LIC’s Index Plus plan."
+      },
+      {
+        "query": "5.What are the key features of LIC’s Nivesh Plus plan, including premium structure, life cover and savings benefits, guaranteed additions, investment risk responsibility, and liquidity restrictions?",
+        "expected": "LIC’s Nivesh Plus is a Non-Participating, Linked, Single Premium, Individual Life Insurance savings plan that provides insurance cover along with savings throughout the policy term. The key features include: \nSingle Premium payment, payable once at policy inception. \nLife insurance cover available for the entire policy term. \nGuaranteed Additions, calculated as a percentage of the single premium, are added to the Unit Fund at specified policy durations and used to purchase units. \nFlexibility to",
+        "plan": "nan",
+        "latency": 8.078280687332153,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.9888,
+            "text_preview": "[Fund|P1] \n       LIC     ’s\n  Nivesh Plus\nSales Brochure\n\n\n\n\n        LIC  ’s  Nivesh Plus (UIN:512L317V02)\n   (A Non-par, Linked, Life, Individual Savings Plan)\n   IN    THIS    POLICY,    THE    INVESTMENT    RISK    IN    INVESTMENT\n\n   THE UNIT LINKED INSURANCE PRODUCTS DO NOT OFFER\n   ANY      ",
+            "section_type": "fund"
+          },
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.9078,
+            "text_preview": "[Fund|P18] i)                                                                          LIC  ’s Nivesh Plus  is a Unit Linked Life Insurance product,\n          which is different from the traditional insurance products.\nii)                                                                          The ",
+            "section_type": "fund"
+          },
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.5729,
+            "text_preview": "[Premium|P21] \n20.           SAMPLE ILLUSTRATION\n                             Pulkit         is         30         years         old         and         opts         to         take         LIC  ’s         Nivesh\n\n                             Plus         policy         by         payment         of",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.3698,
+            "text_preview": "[Claim|P36]                                                i)                                                                      LIC  ’s           New           Pension           Plus           is           a           Unit           Linked           Pension\n                       product,        ",
+            "section_type": "claim"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.365,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9888279438018799,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "Here are the key features of LIC’s Nivesh Plus plan based on the provided context:\n\n### Key Features of LIC’s Nivesh Plus Plan\n\n- **Plan Type**: \n  - Non-par, Single Premium, Linked, Life, Individual Savings Plan [Source: LIC_Nivesh Plus _Sales Brochure Eng..pdf, P1].\n\n- **Premium Structure**:\n  - Single premium payment. The policyholder pays a lump sum amount at the start of the policy [Source: LIC_Nivesh Plus _Sales Brochure Eng..pdf, P1].\n\n- **Life Cover and Savings Benefits**:\n  - Provides life insurance cover throughout the policy term.\n  - Offers insurance cum savings benefits [Source: LIC_Nivesh Plus _Sales Brochure Eng..pdf, P1].\n\n- **Guaranteed Additions**:\n  - Guaranteed additions are provided as a percentage of the single premium and are added to the unit fund at the end of the policy term [Source: LIC_Nivesh Plus _Sales Brochure Eng..pdf, P1].\n\n- **Investment Risk Responsibility**:\n  - The investment risk in the investment portfolio is borne by the policyholder. The NAVs of the units may fluctuate based on the performance of the fund and market factors [Source: LIC_Nivesh Plus _Sales Brochure Eng..pdf, P18].\n\n- **Liquidity Restrictions**:\n  - The plan does not offer any liquidity during the first five years of the contract. Policyholders cannot surrender or partially withdraw funds until the end of the fifth year [Source: LIC_Nivesh Plus _Sales Brochure Eng..pdf, P1].\n\nThese features highlight the structure and benefits of the LIC’s Nivesh Plus plan, emphasizing its nature as a single premium, unit-linked insurance product with specific liquidity constraints and investment risks."
+      },
+      {
+        "query": "What are the different types of pension plans?",
+        "expected": "1.LIC's New Pension Plus\n2.LIC's Jeevan Akshay-VII\n3.LIC's New Jeevan Shanti\n4.LIC's Saral Pension\n5.LIC's Smart Pension",
+        "plan": "Pension Plans",
+        "latency": 7.270715236663818,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.0203,
+            "text_preview": "[Premium|P2]          •                                                   Single Premium Immediate Annuity Plan\n         •                                                   Wide range of annuity options to suit your needs.\n         •                                                   Flexibility to c",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.0166,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Lic NEW Jeevan Shanti  2025 _Eng_Singal page 21.08.2025.pdf",
+            "score": 0.0138,
+            "text_preview": "[Premium|P2]                                                           •                             Single Premium Deferred Annuity plan\n                                                          •                             Two annuity options to suit your needs\n                                   ",
+            "section_type": "premium"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.0082,
+            "text_preview": "[Benefits|P20]                                                                                                                                                                                                                                                                                              ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.0079,
+            "text_preview": "[Benefits|P36]                        this  brochure  &  customized  benefit  illustration  and\n                       understand what the plan is, how it works and the\n                       risks involved before you purchase.\n                                               vi)                      ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.02033279649913311,
+        "is_relevant": false,
+        "failure_reason": "LOW_SIMILARITY",
+        "generated_answer": "Based on the provided context, here are the different types of pension plans offered by LIC:\n\n### 1. LIC's New Pension Plus\n- **Type**: Non-Par, Linked, Pension, Individual Savings Plan\n- **Key Features**:\n  - The investment risk is borne by the policyholder.\n  - No liquidity during the first five years of the contract.\n  - Benefits are available in the form of annuities, except for commutation as allowed under regulations.\n  - Designed to build a corpus through systematic and disciplined savings, which can be converted into regular income.\n- **Source**: [LIC's New Pension Plus Eng Brochure_171025.pdf]\n\n### 2. LIC Jeevan Akshay VII\n- **Type**: Single Premium Immediate Annuity Plan\n- **Key Features**:\n  - Offers a wide range of annuity options.\n  - Flexibility to choose between Single Life Annuity and Joint Life Annuity.\n  - Annuity payments can be made yearly, half-yearly, quarterly, or monthly.\n- **Source**: [LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf]\n\n### 3. LIC New Jeevan Shanti\n- **Type**: Single Premium Deferred Annuity Plan\n- **Key Features**:\n  - Offers two annuity options.\n  - Flexibility to choose between Single Life Annuity and Joint Life Annuity.\n  - Annuity payments can be made yearly, half-yearly, quarterly, or monthly.\n- **Source**: [Lic NEW Jeevan Shanti 2025 _Eng_Singal page 21.08.2025.pdf]\n\nThese plans cater to different needs, such as immediate or deferred annuity options, and offer flexibility in terms of payment modes and life coverage options."
+      },
+      {
+        "query": "What is the minimum age limit for LIC Smart Pension Plan?",
+        "expected": "It is 18 years.  ",
+        "plan": "nan",
+        "latency": 1.7678742408752441,
+        "retrieved_docs": [
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.991,
+            "text_preview": "[Contact|P13] IRDAI    applicable    to    POS    Plans    and    POSP-LI.    Currently,    the\nfollowing  restrictions  are  applicable  for  proposal  procured\nthrough POSP-LI and CPSC-SPV:\n      •                                                   Maximum   Age   at   Entry:   65   years   (Age   ",
+            "section_type": "contact"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.8037,
+            "text_preview": "[Eligibility|P3] \n         ii.                                                Minimum and                                                 Premium                                                    Minimum                                                   Maximum  Age at\n                             ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.7024,
+            "text_preview": "[Eligibility|P2] g)                                                      Minimum Age at the end of\n                   premium paying term                                                                                                                                                                   ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.4091,
+            "text_preview": "[Annuity|P2] \n                   LIC ’s Smart Pension (UIN:512N386V01)\n             (A Non-Par, Non-Linked, Individual, Savings,\n\nLIC  ’s        Smart        Pension        is        a        Non-Par,        Non-Linked,        Individual/\nGroup, Savings, Immediate Annuity plan that offers a range\nof",
+            "section_type": "annuity"
+          },
+          {
+            "source": "Lic NEW Jeevan Shanti  2025 _Eng_Singal page 21.08.2025.pdf",
+            "score": 0.3282,
+            "text_preview": "[Eligibility|P4]                                                        Maximum Age at Entry                                  : 79 years (Last Birthday)\n                                                       Minimum Vesting Age                                                 : 31 years (Last Birthda",
+            "section_type": "eligibility"
+          }
+        ],
+        "top_score": 0.99101322889328,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to determine the minimum age limit for the LIC Smart Pension Plan."
+      },
+      {
+        "query": "What annuity options are available under LIC’s Jeevan Akshay-VII, and how do the guaranteed period and return of purchase price differ across these options?",
+        "expected": "LIC’s Jeevan Akshay-VII offers a wide range of immediate annuity options (Options A to J). These options differ based on guaranteed payout periods, annuity continuation, and return of purchase price: \nOption A: Immediate annuity for life. Payments stop on death; no amount is payable thereafter. \nOptions B, C, D, E: Immediate annuity with a guaranteed period of 5, 10, 15, or 20 years respectively. If the annuitant dies during the guaranteed period, annuity continues to the nominee until the perio",
+        "plan": "nan",
+        "latency": 7.160510301589966,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.9929,
+            "text_preview": "[Annuity|P2] \n             LIC ’s Jeevan Akshay-VII (UIN: 512N337V07)\n                 (A Non-Par, Non-Linked, Individual, Savings,\n\n                                                      LIC  ’s                    Jeevan                    Akshay                    -                    VII          ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.4704,
+            "text_preview": "[Annuity|P24]        Loan     shall     be     available     under     the     Annuity     Options     –     E1,\n       E2, E3, E4, E5, F and J only.\n       Under      joint      life      annuity      option,      the      loan      can      be      availed\n       by             the             Pri",
+            "section_type": "annuity"
+          },
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.1069,
+            "text_preview": "[Annuity|P9]                Option           J:           Joint           Life           Immediate           Annuity           for                                                                                     63,300\n               life   with   a   provision   for   100%   of   the   annuity\n ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.0762,
+            "text_preview": "[Annuity|P14]                                                     •                                                    Option F        :                                                     Immediate    Annuity    for    life    with    return    of\n                                       Purchase Pri",
+            "section_type": "annuity"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.0558,
+            "text_preview": "[Benefits|P2] This      is      a      non-par      product      under      which      benefits      payable      on\ndeath or survival are guaranteed and fixed (as per the chosen\nAnnuity Option) irrespective of actual experience. Hence the\npolicy  is  not  entitled  to  any  discretionary  benefits ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.9928673505783081,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "Under LIC’s Jeevan Akshay-VII, the following annuity options are available:\n\n### Annuity Options\n\n1. **Option F**: \n   - **Type**: Immediate Annuity for life\n   - **Feature**: Return of Purchase Price upon death of the annuitant.\n\n2. **Option J**:\n   - **Type**: Joint Life Immediate Annuity\n   - **Feature**: \n     - 100% of the annuity is payable as long as one of the annuitants survives.\n     - Return of Purchase Price on the death of the last survivor.\n\n### Key Differences\n\n- **Guaranteed Period**: The annuity rates are guaranteed at the inception of the policy and are payable throughout the lifetime of the annuitant(s) [Source: LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf].\n  \n- **Return of Purchase Price**:\n  - **Option F** provides a return of the purchase price upon the death of the annuitant.\n  - **Option J** provides a return of the purchase price upon the death of the last surviving annuitant.\n\nThese options ensure that the annuity payments are structured to meet the needs of the policyholder, with specific provisions for the return of the purchase price under certain conditions. [Source: LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf]"
+      },
+      {
+        "query": "What is LIC’s New Pension Plus (UIN: 512L347V01) and what are its key features?",
+        "expected": "A: LIC’s New Pension Plus (UIN: 512L347V01) is a non-participating, unit linked, individual pension savings plan designed to help policyholders build a retirement corpus through systematic and disciplined savings. The plan can be purchased with either a single premium or regular premiums and allows investment in one of four available investment funds. The investment risk in the chosen fund is borne entirely by the policyholder. The accumulated corpus at vesting is used to provide retirement bene",
+        "plan": "nan",
+        "latency": 12.546267986297607,
+        "retrieved_docs": [
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.9989,
+            "text_preview": "[Benefits|P1] \n  LIC’s New Pension Plus\n    Sales Brochure\n         1\n\n\n\n\n                      LIC  ’s New Pension Plus\n                             (UIN: 512L347V01)\n\n     In this policy, the investment risk in investment portfolio\n     is borne by the policyholder.\n     The unit linked insurance ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.9911,
+            "text_preview": "[Annuity|P2] \n                   LIC ’s Smart Pension (UIN:512N386V01)\n             (A Non-Par, Non-Linked, Individual, Savings,\n\nLIC  ’s        Smart        Pension        is        a        Non-Par,        Non-Linked,        Individual/\nGroup, Savings, Immediate Annuity plan that offers a range\nof",
+            "section_type": "annuity"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.9889,
+            "text_preview": "[Surrender|P2] \n                LIC ’s Index Plus (UIN: 512L354V01)\n                                      (A Non-Par Linked,\n                        Life, Individual  Savings Plan)\n  IN        THIS        POLICY,        THE        INVESTMENT        RISK        IN        INVESTMENT\n\n  THE   UNIT   LI",
+            "section_type": "surrender"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.9885,
+            "text_preview": "[Claim|P36]                                                i)                                                                      LIC  ’s           New           Pension           Plus           is           a           Unit           Linked           Pension\n                       product,        ",
+            "section_type": "claim"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.973,
+            "text_preview": "[Annuity|P36]                        of      the      Insurance      Company      and      LIC  ’s      New      Pension\n                       Plus         is         only         the         name         of         the         unit         linked         pension\n                       contract and",
+            "section_type": "annuity"
+          }
+        ],
+        "top_score": 0.9989122152328491,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### LIC’s New Pension Plus (UIN: 512L347V01)\n\nLIC’s New Pension Plus is a unit-linked, non-participating pension plan designed to help individuals build a retirement corpus through systematic and disciplined savings. Here are the key features of this plan:\n\n#### Key Features\n\n- **Investment Risk**: The investment risk in the investment portfolio is borne by the policyholder. This means that the returns are subject to market performance and the NAVs of the units may fluctuate based on market conditions. [Source: LIC's New Pension Plus Eng Brochure_171025.pdf, P36]\n\n- **Liquidity**: The plan does not offer any liquidity during the first five years of the contract. Policyholders cannot surrender or withdraw the monies invested in the unit-linked insurance products completely or partially until the end of the fifth year. [Source: LIC's New Pension Plus Eng Brochure_171025.pdf, P1]\n\n- **Pension Product**: This is a pension product where benefits by way of surrender, complete withdrawal, or vesting are available in the form of annuities, except to the extent of commutation allowed under applicable regulations. [Source: LIC's New Pension Plus Eng Brochure_171025.pdf, P1]\n\n- **Plan Type**: It is a Non-Par, Linked, Pension, Individual Savings plan. [Source: LIC's New Pension Plus Eng Brochure_171025.pdf, P1]\n\n- **Objective**: The plan aims to help build a corpus that can be converted into regular income upon retirement. [Source: LIC's New Pension Plus Eng Brochure_171025.pdf, P1]\n\n#### Important Considerations\n\n- **Market Risks**: The premiums paid are subject to investment risks associated with capital markets. The policyholder is responsible for their investment decisions. [Source: LIC's New Pension Plus Eng Brochure_171025.pdf, P36]\n\n- **Understanding Risks**: It is recommended to understand the associated risks and applicable charges by consulting with an insurance agent or intermediary. [Source: LIC's New Pension Plus Eng Brochure_171025.pdf, P36]\n\nThis plan is suitable for individuals looking to systematically save for their retirement while being aware of the investment risks involved."
+      },
+      {
+        "query": "What are the eligibility criteria for Jeevan Shanti pension plan in terms of minimum and maximum purchase price, age limits, vesting age, deferment period, minimum annuity by payout mode, and joint life eligibility?",
+        "expected": "The eligibility criteria for this LIC pension plan are as follows: \nPurchase Price \nMinimum Purchase Price: ₹1,50,000, subject to meeting the minimum annuity requirements. \nMaximum Purchase Price: No limit. However, the maximum annuity payable to an individual is subject to underwriting decisions as per LIC’s Board Approved Underwriting Policy. \nThe minimum purchase price may be increased if required to meet the minimum annuity criteria. \nAge Limits \nMinimum Age at Entry: 30 years (last birthday",
+        "plan": "nan",
+        "latency": 2.1460046768188477,
+        "retrieved_docs": [
+          {
+            "source": "Lic NEW Jeevan Shanti  2025 _Eng_Singal page 21.08.2025.pdf",
+            "score": 0.949,
+            "text_preview": "[Annuity|P2] \n                                LIC  ’s New Jeevan Shanti\n                                         (UIN:512N338V08)\n                           (A Non-Par, Non-Linked, Individual, Savings,\n                                                      Deferred Annuity Plan)\n                     ",
+            "section_type": "annuity"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.0364,
+            "text_preview": "[Eligibility|P21]          mother/father                 and                 shall                 be                 subject                 to                 the                 eligibility\n         conditions of the annuity plan available at that time.\n         Subject  to  the  specific  Plan  ",
+            "section_type": "eligibility"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.0314,
+            "text_preview": "[Rider|P5]       dependant                    person                    with                    disability                    (Divyangjan)                    life                    as\n      mentioned                 in                 Para                 8.(f)                 below,               ",
+            "section_type": "rider"
+          },
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.0208,
+            "text_preview": "[Exclusions|P6]                    allowed      without      any      restriction      on      minimum      annuity\n                   and           the           minimum           Purchase           Price           under           such           cases\n                   shall    be   shall    be   ",
+            "section_type": "exclusions"
+          },
+          {
+            "source": "LIC_Jeevan Akshay VII_Sales Brochure_4 inch x 9 inch_Eng _20082025.pdf",
+            "score": 0.017,
+            "text_preview": "[Eligibility|P11]                   eligibility         conditions         of         the         annuity         plan         available         at\n                  that time.\n                                                                                                     Subject        to     ",
+            "section_type": "eligibility"
+          }
+        ],
+        "top_score": 0.9489638805389404,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "I don't have sufficient information in the provided documents to detail the eligibility criteria for the Jeevan Shanti pension plan in terms of minimum and maximum purchase price, age limits, vesting age, deferment period, minimum annuity by payout mode, and joint life eligibility. The provided context does not include these specific details."
+      },
+      {
+        "query": "What documents are required from a claimant when filing a death claim with LIC?",
+        "expected": "(Includes Claim form A, certified extract of death register, proof of age if not admitted, title evidence, original policy document) Liferay DXP ",
+        "plan": "Claim Settlement ",
+        "latency": 4.335301399230957,
+        "retrieved_docs": [
+          {
+            "source": "LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf",
+            "score": 0.6083,
+            "text_preview": "[Surrender|P1] If death occurs after three years from      the date of risk or from      date of revival/reinstatem ent, the death claim      am ount is payable\nin case of policies where prem ium s are paid up-to-date or where the death occurs within the days of grace. On receipt of\nintim ation of d",
+            "section_type": "surrender"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.2788,
+            "text_preview": "[Claim|P16]                                                                                   Claimants not satisfied with the decision of death claim\n             repudiation             have             the             option             of             referring             their             cases",
+            "section_type": "claim"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.2361,
+            "text_preview": "[Benefits|P4]                                   LIC  ’s Premium Waiver Benefit Rider is opted for, in the\n                                  event       of       death       of       Proposer,       any       subsequent       Premi-\n                                  ums which are waived shall be deem",
+            "section_type": "benefits"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.0918,
+            "text_preview": "[Claim|P30] i)                                                   This illustration is applicable to a non-smoker male/female\n       standard life (from medical, life style and occupation point\n       of view) for a policy purchased offline, wherein LIC  ’s linked\n       Accidental Death Benefit ride",
+            "section_type": "claim"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.0917,
+            "text_preview": "[Benefits|P9] The      Rider      Sum      Assured      in      respect      of      LIC’s      Accident      Benefit\nRider  shall  not  exceed  three  times  of  Sum  Assured  on  Death\nunder the Base product. Any benefit arising under each of all\nother      riders      shall      not      exceed  ",
+            "section_type": "benefits"
+          }
+        ],
+        "top_score": 0.6083439588546753,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "When filing a death claim with LIC, the following documents are required from the claimant:\n\n- **Claim Form A**: Claimant’s Statement providing details of the deceased and the claimant.\n- **Certified Extract from Death Register**: Official documentation confirming the death.\n- **Documentary Proof of Age**: Required if the age of the deceased is not already admitted.\n- **Evidence of Title to the Deceased’s Estate**: Necessary if the policy is not nominated, assigned, or issued under the Married Women’s Property Act (M.W.P. Act).\n- **Original Policy Document**: The original policy document must be submitted.\n\nThese requirements apply if the death occurs after three years from the date of risk or from the date of revival/reinstatement, and the premiums are paid up-to-date or the death occurs within the days of grace. If death occurs within three years from the date of risk or from the date of revival/reinstatement, the claimant is requested to contact the branch office for further instructions. [Source: LIC Claims Settlement Requirements - Guide to Smooth Policy Claims]"
+      },
+      {
+        "query": "How does LIC process a maturity claim for an endowment policy?",
+        "expected": "(Branch office sends intimation and claimant must submit discharge form, original policy, NEFT mandate, KYC documents) Liferay DXP ",
+        "plan": "nan",
+        "latency": 4.768218755722046,
+        "retrieved_docs": [
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.7264,
+            "text_preview": "[Benefits|P11]      If the premiums are not paid within the grace period, then\n     the policy will lapse. A lapsed policy can be revived, within\n     a period of 5 consecutive complete years from the date of\n     First  Unpaid  Premium  and  before  the  Date  of  Maturity,  as\n     the case may be",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Lic NEW Bima Ratna  Broucher sales Brochure.pdf",
+            "score": 0.6685,
+            "text_preview": "[Premium|P12]           If the premiums are not paid within the grace period,\n          then     the     policy     will     lapse.     A     lapsed     policy     can     be     revived\n          within             a             period             of             5             consecutive           ",
+            "section_type": "premium"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.6638,
+            "text_preview": "[Claim|P7]  maturity claim.\n The      first      payment      will      be      made      on      the      date      of      maturity\n and thereafter, based on the mode of instalment payment\n opted for by the policyholder, every month or three months\n or six months or annually from the date of matur",
+            "section_type": "claim"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.599,
+            "text_preview": "[Policy Term|P1]   Endowment\n   Plan Sales\n    Brochure\n\n\n\n\n            LIC’s SINGLE PREMIUM ENDOWMENT\n                                                                       PLAN (UIN: 512N283V03)\n                                                  (A Par, Non-Linked, Life, Individual,\n               ",
+            "section_type": "policy_term"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.0427,
+            "text_preview": "[Premium|P12]          be  effected  on  payment  of  all  the  arrears  of  premium(s)\n         together with interest (compounding half-yearly) at such\n         rate        as        may        be        fixed        by        the        Corporation        from        time        to\n         time ",
+            "section_type": "premium"
+          }
+        ],
+        "top_score": 0.7263593673706055,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "### Maturity Claim Process for LIC Endowment Policy\n\nWhen a maturity claim is processed for an LIC endowment policy, the following steps are involved:\n\n1. **Initial Payment**:\n   - The first payment is made on the date of maturity.\n\n2. **Subsequent Payments**:\n   - Depending on the mode of instalment payment chosen by the policyholder, subsequent payments are made every month, three months, six months, or annually from the date of maturity.\n\n3. **Settlement Option**:\n   - If the Life Assured has opted for a Settlement Option against the Maturity Benefit and wishes to withdraw this option, they can do so by submitting a written request.\n   - Upon withdrawal, the policyholder will receive a lump sum amount, which is the higher of:\n     - The discounted value of all future instalments due, or\n     - The outstanding instalments.\n\nThis process ensures that the policyholder receives their maturity benefits in a structured manner, with the flexibility to adjust the payment method if desired. \n\n[Source: 102294- Amritbaal Sales Brochure_MAR 25.pdf]"
+      },
+      {
+        "query": "If a death occurs within three years of risk start or reinstatement, what should the claimant do?",
+        "expected": "(Contact servicing branch for additional requirements) Liferay DXP ",
+        "plan": "nan",
+        "latency": 2.670551061630249,
+        "retrieved_docs": [
+          {
+            "source": "LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf",
+            "score": 0.9982,
+            "text_preview": "[Surrender|P1] If death occurs after three years from      the date of risk or from      date of revival/reinstatem ent, the death claim      am ount is payable\nin case of policies where prem ium s are paid up-to-date or where the death occurs within the days of grace. On receipt of\nintim ation of d",
+            "section_type": "surrender"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.0877,
+            "text_preview": "[Surrender|P15]            of      revival      of      the      policy,      as      applicable,      the      nominee      or\n           beneficiary of the Life Assured shall be entitled to 80% of\n           the  total  premiums  paid  (excluding  any  extra  premium,\n           rider     premium ",
+            "section_type": "surrender"
+          },
+          {
+            "source": "101941 LIC_Index Plus Sales Brochure.pdf",
+            "score": 0.045,
+            "text_preview": "[Surrender|P25]          is   not   sufficient   to   recover   the   charges   during   the   revival\n         period,       the       policy       shall       terminate       and       thereafter      revival\n         will not be allowed.\n                                                   LIC’s   ",
+            "section_type": "surrender"
+          },
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.024,
+            "text_preview": "[Benefits|P7] be\t                  void\t                      and\t                          all\t                claims\t                                          to\t           any\t         benefit\t               by\t         virtue\t                                        thereof\t                      ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.014,
+            "text_preview": "[Claim|P30]                         Claimants      not      satisfied      with      the      decision      of      death      claim\n       repudiation        have        the        option        of        referring        their        cases        for\n       review to Zonal Office Claims Dispute Re",
+            "section_type": "claim"
+          }
+        ],
+        "top_score": 0.9982103109359741,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "If a death occurs within three years from the date of risk or from the date of revival/reinstatement, the claimant is requested to contact the Branch Office of LIC. The specific requirements or actions to be taken are not detailed in the provided context, so it is advisable for the claimant to directly reach out to the LIC Branch Office for further guidance on the necessary steps and documentation required for processing the claim. \n\n[Source: LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf]"
+      },
+      {
+        "query": "What additional proof is usually insisted upon for a Double Accident Benefit claim?",
+        "expected": "(Proof that the accident satisfies policy conditions; FIR and post-mortem reports typically required) Liferay DXP ",
+        "plan": "nan",
+        "latency": 5.4661571979522705,
+        "retrieved_docs": [
+          {
+            "source": "LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf",
+            "score": 0.9949,
+            "text_preview": "[Contact|P1] the servicing branch for additional requirem ents.\nD  o uble   A ccid ent  B enefit  C  la im   s:\nDouble Accident Benefit is provided as an additional benefit to the life insurance cover. For this purpose an extra  prem ium      of\nRs.1/  -   per Rs.10    0    0    /  -   S .A is charg",
+            "section_type": "contact"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.0056,
+            "text_preview": "[Benefits|P6] \n        the            policy            term.            If            this            rider            is            opted            for,            in            case            of\n        accidental  death,  the  Accident  Benefit  Sum  Assured  will\n        be    payable    in  ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.0055,
+            "text_preview": "[Benefits|P7]                payable in lumpsum along with the death benefit under\n               the base plan.  In case of accidental disability arising due\n               to accident (within 180 days from the date of accident),\n               an  amount  equal  to  the  Accident  Benefit  Sum  As",
+            "section_type": "benefits"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.0012,
+            "text_preview": "[Benefits|P7] \n        to                           the                           completed                           months                           for                           the                           Policy                           Year                           in\n        which policy i",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.0011,
+            "text_preview": "[Rider|P4] a)                      LIC ’s Accidental Death and Disability Benefit Rider\n                                                  This rider can be opted for at any time under an in-force policy within the premium\n       paying     term     of     the     Base     plan     provided     the  ",
+            "section_type": "rider"
+          }
+        ],
+        "top_score": 0.9949341416358948,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "For a Double Accident Benefit claim, the claimant is usually required to produce documents such as the FIR (First Information Report) and the Post-mortem Report to prove that the accident meets the policy conditions as defined by the Corporation. These documents are insisted upon to satisfy the Corporation's requirements for the claim [Source: LIC Claims Settlement Requirements - Guide to Smooth Policy Claims]."
+      },
+      {
+        "query": "What are the essential conditions for claiming the LIC disability benefit?",
+        "expected": "(The disability must be total and permanent as defined by policy conditions) Liferay DXP ",
+        "plan": "nan",
+        "latency": 7.09740948677063,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Nivesh Plus _Sales Brochure Eng..pdf",
+            "score": 0.5516,
+            "text_preview": "[Benefits|P2] •                                                                          Partial withdrawals allowed to take care of liquidity needs\n         as specified in Para 4 below.\n•                                                                          Option        to        enhance      ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.2841,
+            "text_preview": "[Rider|P4] a)                      LIC ’s Accidental Death and Disability Benefit Rider\n                                                  This rider can be opted for at any time under an in-force policy within the premium\n       paying     term     of     the     Base     plan     provided     the  ",
+            "section_type": "rider"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.2419,
+            "text_preview": "[Benefits|P5]            Disability         Benefit         Rider         or         LIC  ’s         Accident         Benefit         Rider\n           and/or the remaining two riders subject to the eligibility\n           as detailed below:\na)                                                          ",
+            "section_type": "benefits"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.1827,
+            "text_preview": "[Benefits|P7] \n        to                           the                           completed                           months                           for                           the                           Policy                           Year                           in\n        which policy i",
+            "section_type": "benefits"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.1652,
+            "text_preview": "[Eligibility|P7]         or        the        remaining        two        riders        subject        to        the        eligibility        as\n        detailed below:\n                                                        a) LIC’s Accidental Death and Disability Benefit Rider\n               (UIN",
+            "section_type": "eligibility"
+          }
+        ],
+        "top_score": 0.5516260266304016,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "To claim the LIC Disability Benefit, the following essential conditions must be met:\n\n1. **Policy Status**: The rider can be opted for at any time under an in-force policy within the premium paying term of the Base plan.\n\n2. **Premium Paying Term**: The outstanding premium paying term of the Base plan as well as the rider must be at least 5 years.\n\n3. **Age Limit**: The benefit cover under this rider shall be available up to the policy anniversary on which the age nearer birthday of the Life Assured is 70 years.\n\n4. **Accidental Disability**: In case of accidental disability arising due to an accident (within 180 days from the date of the accident), an amount equal to the Accident Benefit Sum Assured will be paid in equal monthly installments spread over 10 years.\n\n5. **Future Premiums**: Future premiums for the Accident Benefit Sum Assured as well as premiums for the portion of Basic Sum Assured under the Base plan will be waived.\n\nThese conditions are consistent across the different LIC plans that offer the Accidental Death and Disability Benefit Rider, such as the ones mentioned in the provided documents. \n\n[Source: LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf, LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf, 102268- Jeevan Utsav Sales Brochure.pdf]"
+      },
+      {
+        "query": "How does LIC handle claims review if a death claim is rejected due to alleged fraud or suppression of information?",
+        "expected": "(Claimant may represent to the Claims Review Committees at Zonal or Central Offices) Liferay DXP ",
+        "plan": "nan",
+        "latency": 9.94268250465393,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.0056,
+            "text_preview": "[Exclusions|P22] (Continued: is later on the ground of fraud:)\nsilence to speak, or unless his silence is, in itself, equivalent to speak.\n(3)                                                  Notwithstanding anything contained in subsection (2), no insurer shall repudiate\n      a  life  insurance  p",
+            "section_type": "exclusions"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.0052,
+            "text_preview": "[Exclusions|P17]           be fraudulent.\n                                                                                  Explanation II- Mere silence as to facts likely to affect the\n          assessment of the risk by the insurer is not fraud, unless\n          the circumstances of the case are s",
+            "section_type": "exclusions"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.0044,
+            "text_preview": "[Exclusions|P15]          be fraudulent.\n                                                                              Explanation II- Mere silence as to facts likely to affect the\n         assessment of the risk by the insurer is not fraud, unless\n         the circumstances of the case are such tha",
+            "section_type": "exclusions"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.0043,
+            "text_preview": "[Exclusions|P25]       be fraudulent.\nExplanation  II-  Mere  silence  as  to  facts  likely  to  affect  the\nassessment    of    the    risk    by    the    insurer    is    not    fraud,    unless\nthe   circumstances   of   the   case   are   such   that   regard   being\nhad       to       them,  ",
+            "section_type": "exclusions"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.0001,
+            "text_preview": "[Claim|P23]           nominees      or      assignees      of      the      insured      the      grounds      and\n          materials on which such decision is based.\n                                                                              Explanation     I-     For     the     purposes     of",
+            "section_type": "claim"
+          }
+        ],
+        "top_score": 0.005582683254033327,
+        "is_relevant": false,
+        "failure_reason": "LOW_SIMILARITY",
+        "generated_answer": "When a death claim is rejected by LIC due to alleged fraud or suppression of information, the following procedures and considerations are involved:\n\n1. **Grounds for Rejection**:\n   - The rejection is based on the grounds and materials that indicate fraud or suppression of information by the insured or their agent, with the intent to deceive the insurer or induce the issuance of a life insurance policy [Source: LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf].\n\n2. **Definition of Fraud**:\n   - Fraud includes acts such as suggesting false facts, actively concealing facts, or any other acts intended to deceive the insurer [Source: LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf].\n\n3. **Onus of Proof**:\n   - In cases of fraud, the onus of disproving the allegations lies upon the beneficiaries if the policyholder is not alive. This means that the beneficiaries must provide evidence to counter the claim of fraud [Source: LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf].\n\n4. **Policyholder's Defense**:\n   - The insured can defend against the repudiation by proving that any misstatement or suppression of material fact was true to the best of their knowledge and belief, or that there was no deliberate intention to suppress the fact. Additionally, if such misstatements or suppressions were within the knowledge of the insurer, the policy cannot be repudiated on the grounds of fraud [Source: LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf].\n\n5. **Time Frame for Contesting**:\n   - A life insurance policy may be called into question at any time within three years from the date of issuance of the policy or the date of commencement of risk [Source: LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf].\n\nThese steps ensure that the process is fair and that the beneficiaries have an opportunity to contest the rejection of a claim."
+      },
+      {
+        "query": "Who is included in LIC’s Claims Review Committee to ensure transparency?",
+        "expected": "(Includes a retired High Court / District Court Judge among members) Liferay DXP ",
+        "plan": "nan",
+        "latency": 3.2269177436828613,
+        "retrieved_docs": [
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.604,
+            "text_preview": "[Contact|P24] \n      For      ensuring      quick      redressal      of      customer      grievances      the\n      Corporation   has   introduced   Customer   friendly   Integrated\n      Complaint            Management            System            through            our            Customer\n      ",
+            "section_type": "contact"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.2193,
+            "text_preview": "[Claim|P43]                                                                                                                      Claimants      not      satisfied      with      the      decision      of      death\n                claim repudiation have the option of referring their\n                ",
+            "section_type": "claim"
+          },
+          {
+            "source": "LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf",
+            "score": 0.2142,
+            "text_preview": "[Claim|P14]                                                                               Claimants         not         satisfied         with         the         decision         of         death         claim\n            repudiation           have           the           option           of       ",
+            "section_type": "claim"
+          },
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.2096,
+            "text_preview": "[Claim|P9] Claimants\t             not\t                        satisfied\t                                with\t                              the\t                       decision\t                                                       of\t               death\t               claim\t                         ",
+            "section_type": "claim"
+          },
+          {
+            "source": "LIC Bima Kavach Sales Brochure Eng_03122025.pdf",
+            "score": 0.195,
+            "text_preview": "[Claim|P16]                                                                                   Claimants not satisfied with the decision of death claim\n             repudiation             have             the             option             of             referring             their             cases",
+            "section_type": "claim"
+          }
+        ],
+        "top_score": 0.6039977073669434,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "The Claims Review Committee of LIC includes a retired High Court or District Court Judge as a member to ensure transparency. This is consistent across various plans, including the Amritbaal, New Pension Plus, Single Premium Endowment, Yuva Credit, and Bima Kavach plans. \n\n[Source: 102294- Amritbaal Sales Brochure_MAR 25.pdf, LIC's New Pension Plus Eng Brochure_171025.pdf, LIC_Single Premium Endowment plan_Sales Brochure_4 inch x 9 inch_Eng ..pdf, Lic leaflet Yuva Credit 4x9 inches wxh.pdf, LIC Bima Kavach Sales Brochure Eng_03122025.pdf]"
+      },
+      {
+        "query": "What role does the Insurance Ombudsman play in LIC claim disputes?",
+        "expected": "(Handles complaints including repudiation of claims, disputes relating to premiums, legal construction, delays, non-receipt of documents) Liferay DXP ",
+        "plan": "nan",
+        "latency": 6.637897968292236,
+        "retrieved_docs": [
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.7768,
+            "text_preview": "[Exclusions|P27]                                                    For    redressal    of    Claims    related    grievances,    claimants    can\n       also        approach        Insurance        Ombudsman        who        provides        for\n       low cost and speedy arbitration to customers.\n",
+            "section_type": "exclusions"
+          },
+          {
+            "source": "LIC India Grievance Redressal _ Official website of Life Insurance Corporation of India_ (1).pdf",
+            "score": 0.6701,
+            "text_preview": "[Contact|P2] \n                                       ALTERNATE G RIEVANCE REDRESSAL MACHINERY\n  OFFICE OF INSURANCE OMBUDSMAN   IS  AN   ALTERNATE G RIEVANCE REDRESSAL PLATFORM SET UP WITH AN   AIM TO\n  RESOLVE G RIEVANCES  RELATED TO INSURANCE SECTOR\n  Before approaching Insurance Ombudsman,\n     •",
+            "section_type": "contact"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.6395,
+            "text_preview": "[Claim|P22]                                                                               For redressal of Claims related grievances, claimants can\n           also    approach    Insurance    Ombudsman    who    provides    for\n           low cost and speedy arbitration to customers.\n               ",
+            "section_type": "claim"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.0233,
+            "text_preview": "[Contact|P24] \n      For      ensuring      quick      redressal      of      customer      grievances      the\n      Corporation   has   introduced   Customer   friendly   Integrated\n      Complaint            Management            System            through            our            Customer\n      ",
+            "section_type": "contact"
+          },
+          {
+            "source": "Lic leaflet Yuva Credit 4x9 inches wxh.pdf",
+            "score": 0.0027,
+            "text_preview": "[Claim|P9] Claimants\t             not\t                        satisfied\t                                with\t                              the\t                       decision\t                                                       of\t               death\t               claim\t                         ",
+            "section_type": "claim"
+          }
+        ],
+        "top_score": 0.7767809629440308,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "The Insurance Ombudsman plays a significant role in resolving claim disputes for LIC policyholders. Here are the key points regarding their role:\n\n- **Alternate Grievance Redressal**: The Insurance Ombudsman serves as an alternate grievance redressal platform specifically set up to address grievances related to the insurance sector. This platform aims to provide low-cost and speedy arbitration to customers [Source: LIC India Grievance Redressal _ Official website of Life Insurance Corporation of India_ (1).pdf].\n\n- **Process**: Before approaching the Insurance Ombudsman, claimants are encouraged to register their complaint with LIC. If the response from LIC is unsatisfactory, the claimant can then escalate the issue to the Insurance Ombudsman [Source: LIC India Grievance Redressal _ Official website of Life Insurance Corporation of India_ (1).pdf].\n\n- **Section 45 of the Insurance Act, 1938**: The Ombudsman also considers the provisions of Section 45 of the Insurance Act, 1938, which states that no life insurance policy shall be questioned on any ground after three years from the date of issuance or commencement of risk [Source: 102268- Jeevan Utsav Sales Brochure.pdf].\n\nOverall, the Insurance Ombudsman provides an accessible and efficient means for policyholders to resolve disputes related to claims with LIC."
+      },
+      {
+        "query": "What happens to maturity payments under money back policies when the amount payable is up to ₹500,000?",
+        "expected": "(Payments are released without asking for the discharge receipt or policy document) Liferay DXP ",
+        "plan": "nan",
+        "latency": 3.653050422668457,
+        "retrieved_docs": [
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.8353,
+            "text_preview": "[Benefits|P7]        Maturity    multiplied    by    the    ratio    of    the    total    period    for    which    premiums    have\n       already       been       paid       bears       to       the       maximum       period       for       which       premiums       were\n       originally    pa",
+            "section_type": "benefits"
+          },
+          {
+            "source": "LIC_Jeevan Umang_Sales Brochure_4 inch x 9 inch_Eng (1).pdf",
+            "score": 0.1618,
+            "text_preview": "[Premium|P7]        the end of  premium paying term and thereafter on completion of each subsequent\n       year   till   the   Life   assured   survives   or   till   the   policy   anniversary   prior   to   the   date   of\n       maturity, whichever is earlier.\n                                    ",
+            "section_type": "premium"
+          },
+          {
+            "source": "102294- Amritbaal Sales Brochure_MAR 25.pdf",
+            "score": 0.1555,
+            "text_preview": "[Claim|P7]  maturity claim.\n The      first      payment      will      be      made      on      the      date      of      maturity\n and thereafter, based on the mode of instalment payment\n opted for by the policyholder, every month or three months\n or six months or annually from the date of matur",
+            "section_type": "claim"
+          },
+          {
+            "source": "LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf",
+            "score": 0.0526,
+            "text_preview": "[Claim|P1] \nH  o m    e/C   u sto m    e r  S e rvice s/C   la  im    s   se ttle m    e n t   re qu ire m    e n ts\n C  la im    s  S ettle m    e nt  R equire m    e nts\nC  la im   s  settlem   ent  p ro ced ure :\nThe settlem ent of claim s is a  very im portant aspect of service to the policyhold",
+            "section_type": "claim"
+          },
+          {
+            "source": "LIC_Bima Shree _Sales Brochure_Eng_06112025.pdf",
+            "score": 0.0355,
+            "text_preview": "[Premium|P11]                       Basic Sum Assured (B.S.A.)                                                                                                                                                                                                                                              ",
+            "section_type": "premium"
+          }
+        ],
+        "top_score": 0.83531653881073,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "When the amount payable under money back policies is up to ₹500,000, the payments are released without requiring the Discharge Receipt or Policy Document from the policyholder. This is to ensure a smooth and expedited process for the policyholder [Source: LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf]."
+      },
+      {
+        "query": "What evidence must be provided if a policy is not nominated, assigned, or issued under the M.W.P. Act for a death claim?",
+        "expected": "(Evidence of title to the deceased’s estate) Liferay DXP ",
+        "plan": "nan",
+        "latency": 5.8314807415008545,
+        "retrieved_docs": [
+          {
+            "source": "LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf",
+            "score": 0.9906,
+            "text_preview": "[Surrender|P1] If death occurs after three years from      the date of risk or from      date of revival/reinstatem ent, the death claim      am ount is payable\nin case of policies where prem ium s are paid up-to-date or where the death occurs within the days of grace. On receipt of\nintim ation of d",
+            "section_type": "surrender"
+          },
+          {
+            "source": "102268- Jeevan Utsav Sales Brochure.pdf",
+            "score": 0.4547,
+            "text_preview": "[Contact|P19]             amount   which   is   higher  of   80%  of   the  total   premiums\n            paid              till              the              date              of              death              (excluding              any              taxes              if\n            collected expl",
+            "section_type": "contact"
+          },
+          {
+            "source": "LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf",
+            "score": 0.0776,
+            "text_preview": "[Contact|P2] policyholders. The num ber of Death Claim s repudiated is, however, very sm all. Even in these cases, an opportunity is given to\nthe claim ant to m ake a  representation for consideration by the Review Com m ittees of the Zonal office and the Central Office.\nAs a  result of such review,",
+            "section_type": "contact"
+          },
+          {
+            "source": "Smart Pension Individual_Sales Brochure Eng .pdf",
+            "score": 0.02,
+            "text_preview": "[Claim|P13]   If                         this                         plan                         is                         purchased                         by                         Nominee/\n  Beneficiary                    of                    the                    deceased                  ",
+            "section_type": "claim"
+          },
+          {
+            "source": "LIC's New Pension Plus Eng Brochure_171025.pdf",
+            "score": 0.0015,
+            "text_preview": "[Claim|P43]                                                                                                                      Claimants      not      satisfied      with      the      decision      of      death\n                claim repudiation have the option of referring their\n                ",
+            "section_type": "claim"
+          }
+        ],
+        "top_score": 0.9905515909194946,
+        "is_relevant": true,
+        "failure_reason": null,
+        "generated_answer": "If a policy is not nominated, assigned, or issued under the M.W.P. Act, the claimant must provide evidence of title to the deceased’s estate for a death claim. This is in addition to other required documents such as the Claimant’s Statement, certified extract from the Death Register, documentary proof of age (if not admitted), and the original policy document. [Source: LIC Claims Settlement Requirements - Guide to Smooth Policy Claims _ Official website of Life Insurance Corporation of India_ (1).pdf]"
+      }
+    ]
+  }
+}

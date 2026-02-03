@@ -1,0 +1,126 @@
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any
+from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
+from langchain_community.chat_models import ChatOllama
+from langchain_aws import ChatBedrock
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from app.core.config import settings
+
+class LLMGenerator(ABC):
+    @abstractmethod
+    def generate_answer(self, query: str, context: List[Dict[str, Any]], conversation_history: list = None) -> str:
+        """Generate an answer given the query and retrieved context."""
+        pass
+
+class BaseLangChainGenerator(LLMGenerator):
+    """Base class for LangChain-based generators to share prompt logic."""
+    def __init__(self, llm):
+        self.llm = llm
+
+    def _build_messages(self, query: str, context: List[Dict[str, Any]], conversation_history: list = None):
+        """Build messages for both streaming and non-streaming."""
+        context_str = "\n\n".join([
+            f"Source: {item['source']}\nContent: {item['text']}" 
+            for item in context
+        ])
+        
+        system_prompt = """You are an expert assistant for the Life Insurance Corporation (LIC) of India.
+        Your goal is to provide accurate, professional, and well-structured answers based ONLY on the provided context.
+        
+        Guidelines:
+        1. **Citations**: Always cite the source document for your facts (e.g., "[Source: Job_Aid.pdf]").
+        2. **Structure**: Use Markdown headers, bullet points, and tables where appropriate (especially for comparing plans or benefits).
+        3. **Accuracy**: If the context represents different plans, be careful not to mix their features. Explicitly state which plan a feature belongs to.
+        4. **Unknowns**: If the answer is not in the context, say "I don't have sufficient information in the provided documents."
+        
+        Format your response in Markdown."""
+        
+        user_prompt = f"Context:\n{context_str}\n\nQuestion: {query}"
+        
+        messages = [SystemMessage(content=system_prompt)]
+        
+        # Add conversation history if provided
+        if conversation_history:
+            for msg in conversation_history:
+                if msg["role"] == "user":
+                    messages.append(HumanMessage(content=msg["content"]))
+                elif msg["role"] == "assistant":
+                    messages.append(AIMessage(content=msg["content"]))
+        
+        # Add current query
+        messages.append(HumanMessage(content=user_prompt))
+        
+        return messages
+
+    def generate_answer(self, query: str, context: List[Dict[str, Any]], conversation_history: list = None) -> str:
+        messages = self._build_messages(query, context, conversation_history)
+        response = self.llm.invoke(messages)
+        return response.content
+    
+    async def generate_answer_stream(self, query: str, context: List[Dict[str, Any]], conversation_history: list = None):
+        """Stream the answer generation token by token."""
+        messages = self._build_messages(query, context, conversation_history)
+        
+        async for chunk in self.llm.astream(messages):
+            if chunk.content:
+                yield chunk.content
+
+class OpenAIGenerator(BaseLangChainGenerator):
+    def __init__(self):
+        model = settings.LLM_MODEL_NAME or "gpt-4o"
+        llm = ChatOpenAI(
+            model=model,
+            temperature=0.1,
+            openai_api_key=settings.OPENAI_API_KEY
+        )
+        super().__init__(llm)
+
+class GroqGenerator(BaseLangChainGenerator):
+    """Groq inference platform - fast and free tier available"""
+    def __init__(self):
+        model = settings.LLM_MODEL_NAME or "llama-3.3-70b-versatile"
+        llm = ChatGroq(
+            model=model,
+            temperature=0.1,
+            groq_api_key=settings.GROQ_API_KEY
+        )
+        super().__init__(llm)
+
+class OllamaGenerator(BaseLangChainGenerator):
+    def __init__(self):
+        model = settings.LLM_MODEL_NAME or "llama3"
+        llm = ChatOllama(
+            model=model,
+            temperature=0.1,
+            base_url=settings.OLLAMA_BASE_URL
+        )
+        super().__init__(llm)
+
+class BedrockGenerator(BaseLangChainGenerator):
+    def __init__(self):
+        model = settings.LLM_MODEL_NAME or "anthropic.claude-v2"
+        # Credentials are Auto-resolved from env vars AWS_ACCESS_KEY_ID etc.
+        # or passed explicitly if needed.
+        llm = ChatBedrock(
+            model_id=model,
+            model_kwargs={"temperature": 0.1},
+            region_name=settings.AWS_REGION
+        )
+        super().__init__(llm)
+
+class LLMFactory:
+    @staticmethod
+    def create_generator() -> LLMGenerator:
+        provider = settings.LLM_PROVIDER.lower()
+        
+        if provider == "openai":
+            return OpenAIGenerator()
+        elif provider == "groq":
+            return GroqGenerator()
+        elif provider == "ollama":
+            return OllamaGenerator()
+        elif provider == "bedrock":
+            return BedrockGenerator()
+        else:
+            raise ValueError(f"Unsupported LLM provider: {provider}")

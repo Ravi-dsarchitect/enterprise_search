@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ngenux-qdrant
+    ports:
+      - "6333:6333"
+      # - "6334:6334" # Uncomment for GRPC
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    restart: always
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ngenux-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - qdrant
+    # command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
