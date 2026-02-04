@@ -200,11 +200,11 @@ class SpacyExtractor:
         if cls._nlp is None:
             try:
                 import spacy
-                cls._nlp = spacy.load("en_core_web_sm")
+                cls._nlp = spacy.load("en_core_web_trf")
             except OSError:
                 print(
-                    "spaCy model 'en_core_web_sm' not found. "
-                    "Install with: python -m spacy download en_core_web_sm"
+                    "spaCy model 'en_core_web_trf' not found. "
+                    "Install with: python -m spacy download en_core_web_trf"
                 )
                 cls._nlp = False  # Mark as unavailable
         return cls._nlp

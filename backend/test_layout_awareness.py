@@ -1,4 +1,5 @@
 import asyncio
+import os
 from app.services.ingestion.parsers import DocumentParserFactory
 from app.services.ingestion.chunkers import (
     SemanticChunker,
@@ -11,7 +12,10 @@ from app.core.model_cache import get_cached_embedder
 
 async def verify_layout_awareness():
     # Pick a specific file to test
-    file_path = r"C:\Users\NakulSaiAdapala\Downloads\enterprise_search_v0.3\docs\OneDrive_1_2-2-2026\102268- Jeevan Utsav Sales Brochure.pdf"
+    file_path = os.path.join(
+        os.path.dirname(__file__), "..", "docs", "OneDrive_1_2-2-2026",
+        "wholelife_plan", "102268- Jeevan Utsav Sales Brochure.pdf"
+    )
 
     print(f"{'='*60}")
     print(f"LAYOUT-AWARE CHUNKING TEST")

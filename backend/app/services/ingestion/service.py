@@ -18,7 +18,7 @@ from app.services.ingestion.chunkers import (
     HybridLayoutSemanticChunker,
     EnrichedChunk
 )
-from app.services.ingestion.metadata import MetadataExtractor, get_section_display_name
+from app.services.ingestion.metadata import MetadataExtractor, get_section_display_name, enrich_chunk_metadata
 
 
 class IngestionService:
@@ -115,8 +115,8 @@ class IngestionService:
                 section_header = enriched.section_header
                 page_number = enriched.page_number
 
-                # Get additional chunk-level metadata
-                chunk_meta = self.metadata_extractor.enrich_chunk_metadata(
+                # Get additional chunk-level metadata (pattern-based, no LLM needed)
+                chunk_meta = enrich_chunk_metadata(
                     chunk_text=chunk_text,
                     section_type=section_type,
                     content_type=content_type,

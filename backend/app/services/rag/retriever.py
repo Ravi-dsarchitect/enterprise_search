@@ -105,6 +105,7 @@ class Retriever:
         use_hybrid: bool = False,
         metadata_filters: Optional[Dict[str, Any]] = None,
         is_hyde: bool = False,
+        use_reranker: bool = True,
     ) -> List[Dict[str, Any]]:
         """
         Search with optional hybrid mode and metadata filtering.
@@ -115,6 +116,7 @@ class Retriever:
             use_hybrid: If True, combine vector + BM25 search using RRF
             metadata_filters: Optional filters to apply (e.g., {"source": "doc.pdf"})
             is_hyde: If True, embed query as document (no BGE prefix) for HyDE search
+            use_reranker: If True, apply cross-encoder reranking to results
 
         Returns:
             List of ranked documents with scores
@@ -124,9 +126,9 @@ class Retriever:
 
         if use_hybrid:
             print(f"Hybrid search mode: Vector + BM25")
-            return await self._hybrid_search(query, limit, qdrant_filter, metadata_filters, is_hyde)
+            return await self._hybrid_search(query, limit, qdrant_filter, metadata_filters, is_hyde, use_reranker)
         else:
-            return await self._vector_search(query, limit, qdrant_filter, is_hyde)
+            return await self._vector_search(query, limit, qdrant_filter, is_hyde, use_reranker)
     
     async def _vector_search(
         self,
@@ -134,6 +136,7 @@ class Retriever:
         limit: int,
         qdrant_filter: Optional[qdrant_models.Filter] = None,
         is_hyde: bool = False,
+        use_reranker: bool = True,
     ) -> List[Dict[str, Any]]:
         """Standard vector-only search."""
         # 1. Generate Embedding
@@ -142,10 +145,10 @@ class Retriever:
             query_vector = self.embedder.embed_documents([query])[0]
         else:
             query_vector = self.embedder.embed_query(query)
-        
+
         # 2. Semantic Search (Fetch more candidates for re-ranking)
-        candidate_limit = limit * 2
-        
+        candidate_limit = limit * 2 if use_reranker else limit
+
         results = self.qdrant.query_points(
             collection_name=settings.QDRANT_COLLECTION_NAME,
             query=query_vector,
@@ -153,7 +156,7 @@ class Retriever:
             with_payload=True,
             query_filter=qdrant_filter  # Apply metadata filters
         ).points
-        
+
         initial_docs = [
             {
                 "id": hit.id,
@@ -164,11 +167,12 @@ class Retriever:
             }
             for hit in results
         ]
-        
-        # 3. Rerank Results
-        ranked_docs = self.reranker.rerank(query, initial_docs, top_n=limit)
-        
-        return ranked_docs
+
+        # 3. Rerank Results (optional)
+        if use_reranker:
+            return self.reranker.rerank(query, initial_docs, top_n=limit)
+
+        return initial_docs[:limit]
     
     async def _hybrid_search(
         self,
@@ -177,6 +181,7 @@ class Retriever:
         qdrant_filter: Optional[qdrant_models.Filter] = None,
         metadata_filters: Optional[Dict[str, Any]] = None,
         is_hyde: bool = False,
+        use_reranker: bool = True,
     ) -> List[Dict[str, Any]]:
         """
         Hybrid search combining vector and BM25 using Reciprocal Rank Fusion.
@@ -190,7 +195,7 @@ class Retriever:
             query_vector = self.embedder.embed_documents([query])[0]
         else:
             query_vector = self.embedder.embed_query(query)
-        
+
         vector_results = self.qdrant.query_points(
             collection_name=settings.QDRANT_COLLECTION_NAME,
             query=query_vector,
@@ -198,7 +203,7 @@ class Retriever:
             with_payload=True,
             query_filter=qdrant_filter
         ).points
-        
+
         vector_docs = [
             {
                 "id": str(hit.id),  # Ensure string for RRF matching
@@ -209,35 +214,37 @@ class Retriever:
             }
             for hit in vector_results
         ]
-        
+
         # 2. BM25 Search
         bm25_retriever = self._get_bm25_retriever()
         bm25_docs = bm25_retriever.search(query, limit=candidate_limit)
-        
+
         # Convert BM25 IDs to strings for matching
         for doc in bm25_docs:
             doc["id"] = str(doc["id"])
-        
+
         # Apply metadata filters to BM25 results if needed
         if metadata_filters:
             bm25_docs = self._filter_bm25_results(bm25_docs, metadata_filters)
-        
+
         print(f"  - Vector search: {len(vector_docs)} results")
         print(f"  - BM25 search: {len(bm25_docs)} results")
-        
+
         # 3. Fuse results using RRF
+        fuse_limit = limit * 2 if use_reranker else limit
         fused_docs = self.rrf_fusion.fuse(
             ranked_lists=[vector_docs, bm25_docs],
             id_key="id",
-            limit=limit * 2  # Get more for reranking
+            limit=fuse_limit
         )
-        
+
         print(f"  - Fused results: {len(fused_docs)} unique documents")
-        
-        # 4. Rerank fused results
-        final_docs = self.reranker.rerank(query, fused_docs, top_n=limit)
-        
-        return final_docs
+
+        # 4. Rerank fused results (optional)
+        if use_reranker:
+            return self.reranker.rerank(query, fused_docs, top_n=limit)
+
+        return fused_docs[:limit]
     
     
     def _filter_bm25_results(

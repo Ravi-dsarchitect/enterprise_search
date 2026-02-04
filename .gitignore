@@ -15,6 +15,11 @@ qdrant_data/
 
 # OS
 .DS_Store
+NUL
 docs/
 venv/
 .claude/
+
+# Secrets
+*.pem
+*.key
