@@ -90,7 +90,7 @@ def load_qa_dataset() -> List[Dict[str, str]]:
 # Stage 0: Ingestion
 # ─────────────────────────────────────────────────────────────────
 
-async def test_ingestion(limit: int = 0):
+async def test_ingestion(limit: int = 0, use_llm_metadata: bool = False):
     """Ingest PDFs from docs folder into Qdrant."""
     from app.core.database import init_qdrant, recreate_collection
     from app.services.ingestion.service import IngestionService
@@ -116,21 +116,21 @@ async def test_ingestion(limit: int = 0):
     recreate_collection()
 
     # Ingest
-    service = IngestionService(use_layout_aware=True, use_llm_metadata=False)
+    service = IngestionService(use_llm_metadata=use_llm_metadata)
     total_chunks = 0
     results = []
 
     for i, pdf_path in enumerate(pdf_files, 1):
         fname = os.path.basename(pdf_path)
-        print(f"  [{i}/{len(pdf_files)}] {fname[:50]}...", end=" ", flush=True)
+        print(f"  [{i}/{len(pdf_files)}] {fname[:50]:<50} ", end="", flush=True)
         start = time.time()
         try:
-            result = await service.process_local_file(pdf_path)
+            result = await service.process_local_file(pdf_path, verbose=True)
             elapsed = time.time() - start
             chunks = result.get("chunks", 0)
             total_chunks += chunks
             results.append({"file": fname, "chunks": chunks, "time": elapsed, "status": "OK"})
-            print(f"[OK] {chunks} chunks ({elapsed:.1f}s)")
+            print(f" OK ({elapsed:.1f}s)")
         except Exception as e:
             elapsed = time.time() - start
             results.append({"file": fname, "chunks": 0, "time": elapsed, "status": f"FAIL: {e}"})
@@ -139,7 +139,11 @@ async def test_ingestion(limit: int = 0):
     # Rebuild BM25 index after ingestion
     from app.core.database import rebuild_bm25_index
     print("\n  Rebuilding BM25 index...")
-    rebuild_bm25_index()
+    try:
+        rebuild_bm25_index()
+        print("  BM25 index rebuilt.")
+    except Exception as e:
+        print(f"  [WARN] BM25 rebuild failed: {e}")
 
     print(f"\n  --- Ingestion Summary ---")
     print_metric("Total documents:", len(pdf_files))
@@ -156,47 +160,55 @@ async def test_ingestion(limit: int = 0):
 # ─────────────────────────────────────────────────────────────────
 
 async def test_chunking_and_metadata():
-    """Test chunk quality and 3-layer metadata integration."""
+    """Test chunk quality and metadata integration."""
     from app.services.ingestion.parsers import DocumentParserFactory
-    from app.services.ingestion.chunkers import HybridLayoutSemanticChunker
+    from app.services.ingestion.chunkers import StructuredChunker
     from app.services.ingestion.metadata import (
         enrich_chunk_metadata,
         extract_structured_fields,
-        SpacyExtractor,
         MetadataExtractor,
         get_section_display_name,
     )
-    from app.core.model_cache import get_cached_embedder
 
-    print_header("TEST 1: CHUNKING + 3-LAYER METADATA")
+    print_header("TEST 1: CHUNKING + METADATA")
 
     if not os.path.exists(SAMPLE_PDF):
         print(f"  Sample PDF not found: {SAMPLE_PDF}")
         return {}
 
-    # 1. Parse
+    # 1. Parse (structured)
     print(f"  Parsing: {os.path.basename(SAMPLE_PDF)}")
     parser = DocumentParserFactory.get_parser(SAMPLE_PDF)
-    text = parser.parse(SAMPLE_PDF)
+    parsed_doc = parser.parse_structured(SAMPLE_PDF)
+    text = parsed_doc.full_text
     print_metric("Extracted text length:", f"{len(text)} chars")
+    print_metric("Headings detected:", len(parsed_doc.headings))
+    print_metric("Tables detected:", len(parsed_doc.tables))
 
-    # 2. Chunk
-    print("\n  Running HybridLayoutSemanticChunker...")
-    embedder = get_cached_embedder()
-    chunker = HybridLayoutSemanticChunker(embedder=embedder, chunk_size=1800)
-    chunks = chunker.chunk_with_metadata(text)
+    # 2. Chunk (structured)
+    print("\n  Running StructuredChunker...")
+    chunker = StructuredChunker()
+    chunks = chunker.chunk_structured(parsed_doc)
 
     sizes = [len(c.text) for c in chunks]
     print_metric("Chunks generated:", len(chunks))
     print_metric("Avg chunk size:", f"{sum(sizes) // len(sizes)} chars")
     print_metric("Min / Max chunk size:", f"{min(sizes)} / {max(sizes)} chars")
 
+    # Size distribution
+    print("\n  Size distribution:")
+    buckets = [(0, 100), (100, 400), (400, 800), (800, 1200), (1200, 2000), (2000, 5000)]
+    for lo, hi in buckets:
+        count = sum(1 for s in sizes if lo <= s < hi)
+        pct = 100 * count / len(sizes) if sizes else 0
+        print(f"    {lo:>5}-{hi:<5}: {count:>4} ({pct:5.1f}%)")
+
     # Section distribution
     section_counts = defaultdict(int)
     for c in chunks:
         section_counts[c.section_type] += 1
     non_general = sum(1 for c in chunks if c.section_type != "general")
-    print_metric("Chunks with section != general:", f"{non_general}/{len(chunks)} ({100*non_general//len(chunks)}%)")
+    print_metric("\n  Chunks with section != general:", f"{non_general}/{len(chunks)} ({100*non_general//len(chunks)}%)")
 
     print("\n  Section distribution:")
     for sec, count in sorted(section_counts.items(), key=lambda x: -x[1]):
@@ -210,36 +222,25 @@ async def test_chunking_and_metadata():
         meta = enrich_chunk_metadata(c.text, c.section_type, c.content_type)
         if meta.get("chunk_tags"):
             layer1_tag_count += 1
-        for field in ["plan_number", "uin", "age_ranges", "monetary_amounts", "benefit_types"]:
-            if meta.get(field):
-                layer1_fields_found.add(field)
+        for field_name in ["plan_number", "uin", "age_ranges", "monetary_amounts", "benefit_types"]:
+            if meta.get(field_name):
+                layer1_fields_found.add(field_name)
 
     print_metric("Chunks with tags:", f"{layer1_tag_count}/{len(chunks)} ({100*layer1_tag_count//len(chunks)}%)")
     print_metric("Fields found:", ", ".join(layer1_fields_found) if layer1_fields_found else "(none)")
 
-    # 4. Layer 2: spaCy NER
-    print("\n  --- Layer 2: spaCy NER ---")
-    ner_total = defaultdict(int)
-    chunks_with_ner = 0
-    for c in chunks[:20]:  # Sample first 20 chunks
-        entities = SpacyExtractor.extract_entities(c.text)
-        if entities:
-            chunks_with_ner += 1
-        for key, vals in entities.items():
-            ner_total[key] += len(vals)
-
-    sample_n = min(20, len(chunks))
-    print_metric("Chunks with NER entities:", f"{chunks_with_ner}/{sample_n} (sampled)")
-    for key, count in sorted(ner_total.items()):
-        print(f"    {key:<25} {count} entities")
-
-    # 5. Layer 3: LLM-based extraction
+    # 4. Layer 3: LLM-based extraction
     print("\n  --- Layer 3: LLM-based extraction ---")
     layer3_success = False
     layer3_result = {}
     try:
         extractor = MetadataExtractor()
-        layer3_result = extractor.extract_metadata(text, os.path.basename(SAMPLE_PDF))
+        tables_preview = "\n\n".join(t.markdown for t in parsed_doc.tables if t.markdown)
+        layer3_result = extractor.extract_metadata(
+            text, os.path.basename(SAMPLE_PDF),
+            headings=parsed_doc.headings,
+            tables_preview=tables_preview or None,
+        )
         layer3_success = bool(layer3_result.get("plan_name") or layer3_result.get("plan_type"))
         print_metric("LLM extraction:", "SUCCESS" if layer3_success else "PARTIAL")
         for k, v in layer3_result.items():
@@ -250,14 +251,15 @@ async def test_chunking_and_metadata():
     except Exception as e:
         print_metric("LLM extraction:", f"FAILED ({e})")
 
-    # 6. Sample enriched chunks
+    # 5. Sample enriched chunks
     print("\n  --- Sample Enriched Chunks (first 3) ---")
     for i, c in enumerate(chunks[:3]):
         meta = enrich_chunk_metadata(c.text, c.section_type, c.content_type)
         print(f"\n  Chunk {i+1}: [{c.section_type}] [{c.content_type}] (page {c.page_number})")
-        print(f"    Tags:   {meta.get('chunk_tags', [])[:5]}")
-        print(f"    Hints:  {meta.get('entity_hints', [])}")
-        print(f"    Text:   {c.text[:150].replace(chr(10), ' ')}...")
+        print(f"    Heading: {c.heading}")
+        print(f"    Tags:    {meta.get('chunk_tags', [])[:5]}")
+        print(f"    Hints:   {meta.get('entity_hints', [])}")
+        print(f"    Text:    {c.text[:150].replace(chr(10), ' ')}...")
 
     metrics = {
         "chunk_count": len(chunks),
@@ -265,11 +267,10 @@ async def test_chunking_and_metadata():
         "pct_with_section": round(100 * non_general / len(chunks), 1),
         "pct_with_tags": round(100 * layer1_tag_count / len(chunks), 1),
         "layer1_fields": list(layer1_fields_found),
-        "layer2_ner_count": dict(ner_total),
         "layer3_success": layer3_success,
     }
 
-    print(f"\n  TEST 1 RESULT: {'PASS' if layer1_tag_count > 0 and chunks_with_ner > 0 else 'PARTIAL'}")
+    print(f"\n  TEST 1 RESULT: {'PASS' if layer1_tag_count > 0 else 'PARTIAL'}")
     return metrics
 
 
@@ -277,12 +278,95 @@ async def test_chunking_and_metadata():
 # Test Case 2: Retrieval Quality
 # ─────────────────────────────────────────────────────────────────
 
+# Known plan names for extracting from question text
+_PLAN_NAMES = [
+    "jeevan utsav", "jeevan umang", "jeevan akshay", "jeevan shanti",
+    "bima shree", "bima ratna", "bima kavach", "bima jyoti",
+    "amritbaal", "index plus", "nivesh plus", "new pension plus",
+    "smart pension", "yuva credit", "single premium endowment",
+    "new endowment", "new money back", "saral pension", "saral jeevan",
+    "digi term", "digi credit",
+]
+
+# Category-level questions (no specific plan) — match by document type
+_CATEGORY_KEYWORDS = {
+    "endowment": "endowment",
+    "money back": "moneyback",
+    "moneyback": "moneyback",
+    "whole life": "whole_life",
+    "term assurance": "term_insurance",
+    "term insurance": "term_insurance",
+    "unit linked": "unit",  # matches "unit" in filenames
+    "pension": "pension",
+    "claim": "claim",
+    "grievance": "grievance",
+}
+
+
+def _extract_plan_from_question(question: str) -> str:
+    """Extract specific plan name from question text."""
+    q_lower = question.lower()
+    for plan in _PLAN_NAMES:
+        if plan in q_lower:
+            return plan
+    return ""
+
+
+def _check_chunk_relevant(doc: dict, expected: str, plan: str, question: str = "") -> bool:
+    """
+    Check if a retrieved chunk is relevant.
+
+    Strategy:
+    1. Extract the target plan name from the question text itself (not the Plan column).
+    2. If a specific plan is identified, check that the chunk's source file or
+       plan_name payload field matches that plan (source document match).
+    3. For category-level questions ("What types of endowment plans..."),
+       check the chunk comes from the right category document.
+    4. Keyword overlap is used only as a secondary signal for generic questions
+       where no plan/category can be identified.
+    """
+    text = doc.get("text", "").lower()
+    source = doc.get("source", "").lower()
+    payload = doc.get("payload", {})
+    chunk_plan = str(payload.get("plan_name", "")).lower()
+
+    # 1. Try to extract specific plan from question
+    target_plan = _extract_plan_from_question(question)
+
+    if target_plan:
+        # Strict check: chunk must be from the right plan's document
+        plan_words = target_plan.split()
+        source_match = all(w in source for w in plan_words)
+        payload_match = all(w in chunk_plan for w in plan_words)
+        return source_match or payload_match
+
+    # 2. Category-level question (e.g., "What types of endowment plans...")
+    q_lower = question.lower()
+    for cat_phrase, file_kw in _CATEGORY_KEYWORDS.items():
+        if cat_phrase in q_lower:
+            return file_kw in source or file_kw in chunk_plan
+
+    # 3. Fallback: use Plan column + keyword overlap (for unknown question types)
+    plan_kws = [w for w in plan.lower().split() if len(w) > 3]
+    if plan_kws:
+        plan_hit = any(kw in source or kw in chunk_plan for kw in plan_kws)
+        if not plan_hit:
+            return False
+
+    # Require meaningful keyword overlap with expected answer
+    kw_ov = keyword_overlap(expected, text)
+    return kw_ov > 0.15
+
+
 async def test_retrieval():
-    """Test retrieval quality across 4 configurations."""
+    """
+    Test retrieval quality: checks if retrieved chunks are relevant at k=1,3,5,10.
+    Reports Hit@k, MRR, and avg keyword overlap per config.
+    """
     from app.services.rag.retriever import Retriever
     from app.services.rag.query_transformer import QueryTransformer
 
-    print_header("TEST 2: RETRIEVAL QUALITY")
+    print_header("TEST 2: RETRIEVAL QUALITY (CHUNK RELEVANCE)")
 
     questions = load_qa_dataset()
     if not questions:
@@ -294,18 +378,29 @@ async def test_retrieval():
     retriever = Retriever()
     transformer = QueryTransformer()
 
+    K_VALUES = [1, 3, 5, 10]
+    MAX_K = max(K_VALUES)
+
     configs = [
-        {"name": "Vector Only", "use_hybrid": False, "use_hyde": False},
-        {"name": "Hybrid (Vector+BM25)", "use_hybrid": True, "use_hyde": False},
-        {"name": "Vector + HyDE", "use_hybrid": False, "use_hyde": True},
-        {"name": "Hybrid + HyDE", "use_hybrid": True, "use_hyde": True},
+        {"name": "Vector Only", "use_hybrid": False, "use_hyde": False, "use_decompose": False},
+        {"name": "Hybrid (Vec+BM25)", "use_hybrid": True, "use_hyde": False, "use_decompose": False},
+        {"name": "Vector + HyDE", "use_hybrid": False, "use_hyde": True, "use_decompose": False},
+        {"name": "Hybrid + HyDE", "use_hybrid": True, "use_hyde": True, "use_decompose": False},
+        {"name": "Vector + Decompose", "use_hybrid": False, "use_hyde": False, "use_decompose": True},
+        {"name": "Hybrid + Decompose", "use_hybrid": True, "use_hyde": False, "use_decompose": True},
     ]
 
     all_metrics = {}
+    all_detailed = {}  # config_name -> list of per-query details
 
     for cfg in configs:
         print(f"\n  --- Config: {cfg['name']} ---")
-        results = []
+        # Per-query results
+        hits_at_k = {k: 0 for k in K_VALUES}  # count of queries with >= 1 relevant chunk in top-k
+        reciprocal_ranks = []
+        kw_overlaps_at_k = {k: [] for k in K_VALUES}
+        latencies = []
+        detailed_results = []
 
         for i, q in enumerate(questions, 1):
             query = q["question"]
@@ -316,76 +411,165 @@ async def test_retrieval():
             start = time.time()
 
             try:
-                search_text = query
-                is_hyde = False
+                # Determine queries to run
+                if cfg.get("use_decompose"):
+                    sub_queries = transformer.decompose_query(query)
+                else:
+                    sub_queries = [query]
 
-                if cfg["use_hyde"]:
-                    hypo_doc = transformer.generate_hyde_doc(query)
-                    if hypo_doc:
-                        search_text = hypo_doc
-                        is_hyde = True
+                all_docs = []
+                for sq in sub_queries:
+                    search_text = sq
+                    is_hyde = False
 
-                docs = await retriever.search(
-                    search_text,
-                    limit=5,
-                    use_hybrid=cfg["use_hybrid"],
-                    is_hyde=is_hyde,
-                    use_reranker=False,  # Pure retrieval — reranking tested separately in Test 3
-                )
+                    if cfg["use_hyde"]:
+                        hypo_doc = transformer.generate_hyde_doc(sq)
+                        if hypo_doc:
+                            search_text = hypo_doc
+                            is_hyde = True
+
+                    results = await retriever.search(
+                        search_text,
+                        limit=MAX_K,
+                        use_hybrid=cfg["use_hybrid"],
+                        is_hyde=is_hyde,
+                        use_reranker=False,
+                    )
+                    all_docs.extend(results)
+
+                # Deduplicate by id (keep first occurrence = highest ranked)
+                seen_ids = set()
+                docs = []
+                for d in all_docs:
+                    did = d.get("id") or d.get("text", "")[:100]
+                    if did not in seen_ids:
+                        seen_ids.add(did)
+                        docs.append(d)
+
                 elapsed = time.time() - start
+                latencies.append(elapsed)
 
-                # Evaluate
+                # Find first relevant rank (for MRR)
+                first_relevant_rank = None
+                for rank, doc in enumerate(docs, 1):
+                    if _check_chunk_relevant(doc, expected, plan, question=query):
+                        if first_relevant_rank is None:
+                            first_relevant_rank = rank
+                        break
+
+                # MRR
+                rr = 1.0 / first_relevant_rank if first_relevant_rank else 0.0
+                reciprocal_ranks.append(rr)
+
+                # Hit@k and keyword overlap at each k
+                for k in K_VALUES:
+                    top_k = docs[:k]
+                    has_hit = any(_check_chunk_relevant(d, expected, plan, question=query) for d in top_k)
+                    if has_hit:
+                        hits_at_k[k] += 1
+                    combined_text = " ".join(d.get("text", "").lower() for d in top_k)
+                    kw_overlaps_at_k[k].append(keyword_overlap(expected, combined_text))
+
                 top_score = docs[0].get("score", 0) if docs else 0
-                sources = " ".join(d.get("source", "").lower() for d in docs[:3])
-                texts = " ".join(d.get("text", "").lower() for d in docs[:3])
-                plan_kws = [w for w in plan.lower().split() if len(w) > 3]
-                plan_match = any(kw in sources or kw in texts for kw in plan_kws)
-                kw_overlap = keyword_overlap(expected, texts)
+                status = "HIT" if first_relevant_rank else "MISS"
+                rank_str = f"@{first_relevant_rank}" if first_relevant_rank else ""
+                print(f"[{status}{rank_str}] {elapsed:.1f}s score={top_score:.3f}")
 
-                is_relevant = top_score >= 0.5 or (plan_match and kw_overlap > 0.15)
-
-                results.append({
-                    "query": query, "plan": plan,
-                    "top_score": round(top_score, 4),
-                    "is_relevant": is_relevant, "latency": elapsed,
-                    "plan_match": plan_match, "kw_overlap": round(kw_overlap, 3),
+                # Save detailed per-query result
+                detailed_results.append({
+                    "question": query,
+                    "plan": plan,
+                    "expected_answer": expected,
+                    "status": status,
+                    "first_relevant_rank": first_relevant_rank,
+                    "latency": round(elapsed, 2),
+                    "sub_queries": sub_queries if cfg.get("use_decompose") else None,
+                    "retrieved_chunks": [
+                        {
+                            "rank": r + 1,
+                            "source": d.get("source", ""),
+                            "score": round(d.get("score", 0), 4),
+                            "section_type": d.get("payload", {}).get("section_type", ""),
+                            "chunk_title": d.get("payload", {}).get("chunk_title", ""),
+                            "relevant": _check_chunk_relevant(d, expected, plan, question=query),
+                            "text": d.get("text", "")[:500],
+                        }
+                        for r, d in enumerate(docs[:MAX_K])
+                    ],
                 })
-
-                status = "OK" if is_relevant else "FAIL"
-                print(f"[{status}] {elapsed:.1f}s score={top_score:.3f}")
 
             except Exception as e:
                 elapsed = time.time() - start
-                results.append({
-                    "query": query, "plan": plan,
-                    "top_score": 0, "is_relevant": False,
-                    "latency": elapsed, "error": str(e),
-                })
+                latencies.append(elapsed)
+                reciprocal_ranks.append(0.0)
+                for k in K_VALUES:
+                    kw_overlaps_at_k[k].append(0.0)
                 print(f"[ERR] {str(e)[:40]}")
+                detailed_results.append({
+                    "question": query, "plan": plan,
+                    "expected_answer": expected,
+                    "status": "ERR", "error": str(e),
+                    "retrieved_chunks": [],
+                })
 
-        # Metrics
-        total = len(results)
-        successful = sum(1 for r in results if r["is_relevant"])
-        scores = [r["top_score"] for r in results]
-        latencies = [r["latency"] for r in results]
+        all_detailed[cfg["name"]] = detailed_results
 
+        # Compute metrics
+        total = len(questions)
         metrics = {
             "config": cfg["name"],
             "total": total,
-            "success_rate": round(100 * successful / max(total, 1), 1),
-            "avg_top_score": round(sum(scores) / max(len(scores), 1), 3),
+            "MRR": round(sum(reciprocal_ranks) / max(total, 1), 3),
             "avg_latency": round(sum(latencies) / max(len(latencies), 1), 3),
         }
+        for k in K_VALUES:
+            metrics[f"Hit@{k}"] = round(100 * hits_at_k[k] / max(total, 1), 1)
+            metrics[f"KW_Overlap@{k}"] = round(
+                sum(kw_overlaps_at_k[k]) / max(len(kw_overlaps_at_k[k]), 1), 3
+            )
+
         all_metrics[cfg["name"]] = metrics
 
-        print(f"\n    Success: {metrics['success_rate']}% | Avg Score: {metrics['avg_top_score']} | Avg Latency: {metrics['avg_latency']}s")
+        print(f"\n    MRR: {metrics['MRR']} | ", end="")
+        print(" | ".join(f"Hit@{k}: {metrics[f'Hit@{k}']}%" for k in K_VALUES))
 
     # Comparison table
-    print("\n  --- Retrieval Comparison ---")
-    print(f"  {'Config':<25} {'Success%':>10} {'AvgScore':>10} {'Latency':>10}")
-    print(f"  {'-'*55}")
+    print(f"\n  {'='*85}")
+    print(f"  RETRIEVAL COMPARISON")
+    print(f"  {'='*85}")
+    header = f"  {'Config':<22} {'MRR':>5}"
+    for k in K_VALUES:
+        header += f" {'Hit@'+str(k):>7}"
+    header += f" {'KWOv@5':>7} {'Latency':>8}"
+    print(header)
+    print(f"  {'-'*85}")
     for name, m in all_metrics.items():
-        print(f"  {name:<25} {m['success_rate']:>9.1f}% {m['avg_top_score']:>10.3f} {m['avg_latency']:>9.3f}s")
+        row = f"  {name:<22} {m['MRR']:>5.3f}"
+        for k in K_VALUES:
+            row += f" {m[f'Hit@{k}']:>6.1f}%"
+        row += f" {m.get('KW_Overlap@5', 0):>7.3f}"
+        row += f" {m['avg_latency']:>7.3f}s"
+        print(row)
+
+    # Save detailed results for the best config (by Hit@5)
+    best_config = max(all_metrics, key=lambda n: all_metrics[n].get("Hit@5", 0))
+    best_m = all_metrics[best_config]
+    print(f"\n  Best config: {best_config} (Hit@5={best_m['Hit@5']}%)")
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    detail_path = os.path.join(os.path.dirname(__file__), f"retrieval_details_{ts}.json")
+
+    detail_output = {
+        "timestamp": ts,
+        "best_config": best_config,
+        "metrics_summary": all_metrics,
+        "questions": all_detailed[best_config],
+    }
+
+    with open(detail_path, "w", encoding="utf-8") as f:
+        json.dump(detail_output, f, indent=2, ensure_ascii=False)
+
+    print(f"  Detailed results saved: {detail_path}")
 
     return all_metrics
 
@@ -495,8 +679,69 @@ async def test_reranking():
 # Test Case 4: Generation Quality
 # ─────────────────────────────────────────────────────────────────
 
+def _check_hallucination(answer: str, context_texts: List[str]) -> dict:
+    """Check if the answer stays grounded in context or hallucinates.
+
+    Returns dict with:
+      - grounded_ratio: fraction of answer sentences that overlap with context
+      - has_refusal: True if model correctly refused (no info in context)
+      - citation_count: number of [Source: ...] citations found
+    """
+    import re
+
+    # Check refusal
+    refusal_phrases = [
+        "i don't have sufficient information",
+        "not in the provided documents",
+        "no information in the provided",
+        "cannot answer",
+        "not available in the context",
+    ]
+    answer_lower = answer.lower()
+    has_refusal = any(p in answer_lower for p in refusal_phrases)
+
+    # Count citations
+    citation_count = len(re.findall(r'\[Source:\s*[^\]]+\]', answer))
+
+    # Sentence-level grounding check
+    context_blob = " ".join(context_texts).lower()
+    context_words = set(context_blob.split())
+
+    # Split answer into sentences
+    sentences = re.split(r'[.!?\n]', answer)
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
+
+    if not sentences:
+        return {"grounded_ratio": 1.0, "has_refusal": has_refusal, "citation_count": citation_count}
+
+    grounded = 0
+    for sent in sentences:
+        sent_words = set(sent.lower().split())
+        # Remove common stop words
+        stop = {"the", "a", "an", "is", "are", "was", "were", "be", "been", "of", "to",
+                "in", "for", "on", "with", "at", "by", "from", "and", "or", "not", "this",
+                "that", "it", "its", "as", "can", "will", "may", "if", "has", "have", "had",
+                "do", "does", "did", "but", "no", "so", "up", "out", "all", "also", "than",
+                "then", "into", "over", "such", "only", "very", "just", "about", "which",
+                "their", "there", "these", "those", "they", "them", "we", "you", "your",
+                "under", "plan", "policy", "shall", "should", "would", "could", "per"}
+        content_words = sent_words - stop
+        if not content_words:
+            grounded += 1
+            continue
+        overlap = content_words & context_words
+        if len(overlap) / len(content_words) >= 0.5:
+            grounded += 1
+
+    return {
+        "grounded_ratio": round(grounded / len(sentences), 3),
+        "has_refusal": has_refusal,
+        "citation_count": citation_count,
+    }
+
+
 async def test_generation():
-    """Test LLM generation quality with citations."""
+    """Test LLM generation quality across top 2 retrieval configs."""
     from app.services.rag.service import get_rag_service
 
     print_header("TEST 4: GENERATION QUALITY")
@@ -506,108 +751,163 @@ async def test_generation():
         print("  No Q&A dataset found. Skipping.")
         return {}
 
-    # Use subset for generation (LLM calls are slow)
-    subset = questions[:5]
-    print(f"  Testing with {len(subset)} questions (LLM generation)")
-
     service = get_rag_service()
-    results = []
+    print_metric("LLM model:", settings.LLM_MODEL_NAME)
+    print(f"  Testing all {len(questions)} questions\n")
 
-    for i, q in enumerate(subset, 1):
-        query = q["question"]
-        expected = q.get("expected", "")
-        plan = q.get("plan", "Unknown")
+    # Top 2 retrieval configs from eval
+    gen_configs = [
+        {"name": "Hybrid (Vec+BM25)", "use_hybrid": True, "use_hyde": False, "use_decompose": False},
+        {"name": "Vector Only", "use_hybrid": False, "use_hyde": False, "use_decompose": False},
+    ]
 
-        print(f"\n  [{i}/{len(subset)}] {query[:60]}...")
-        start = time.time()
+    all_config_results = {}
+    all_detailed = {}
 
-        try:
-            result = await service.answer_query(
-                query=query,
-                use_hyde=False,
-                use_decomposition=False,
-                use_hybrid_search=True,
-                use_auto_filters=False,
-                limit=5,
-            )
-            elapsed = time.time() - start
+    for cfg in gen_configs:
+        cfg_name = cfg["name"]
+        print(f"\n  {'='*60}")
+        print(f"  CONFIG: {cfg_name}")
+        print(f"  {'='*60}")
 
-            answer = result.get("answer", "")
-            citations = result.get("citations", [])
+        results = []
 
-            # Metrics
-            kw_overlap = keyword_overlap(expected, answer)
-            has_citations = len(citations) > 0
-            plan_kws = [w for w in plan.lower().split() if len(w) > 3]
-            citation_sources = [c.get("source", "").lower() for c in citations]
-            source_match = any(
-                any(kw in src for kw in plan_kws)
-                for src in citation_sources
-            )
+        for i, q in enumerate(questions, 1):
+            query = q["question"]
+            expected = q.get("expected", "")
+            plan = q.get("plan", "Unknown")
 
-            results.append({
-                "query": query,
-                "plan": plan,
-                "kw_overlap": round(kw_overlap, 3),
-                "has_citations": has_citations,
-                "source_match": source_match,
-                "latency": elapsed,
-                "answer_preview": answer[:200],
-            })
+            print(f"  [{i}/{len(questions)}] {query[:65]}...", end=" ", flush=True)
+            start = time.time()
 
-            print(f"    Accuracy (kw overlap): {kw_overlap:.2f}")
-            print(f"    Citations: {len(citations)} | Source match: {source_match}")
-            print(f"    Latency: {elapsed:.1f}s")
-            print(f"    Answer: {answer[:150].replace(chr(10), ' ')}...")
+            try:
+                result = await service.answer_query(
+                    query=query,
+                    use_hyde=cfg["use_hyde"],
+                    use_decomposition=cfg["use_decompose"],
+                    use_hybrid_search=cfg["use_hybrid"],
+                    use_auto_filters=False,
+                    limit=5,
+                )
+                elapsed = time.time() - start
 
-        except Exception as e:
-            elapsed = time.time() - start
-            results.append({
-                "query": query, "plan": plan,
-                "kw_overlap": 0, "has_citations": False,
-                "source_match": False, "latency": elapsed,
-                "error": str(e),
-            })
-            print(f"    [ERROR] {str(e)[:60]}")
+                answer = result.get("answer", "")
+                citations = result.get("citations", [])
+                context_texts = [c.get("text", "") for c in citations]
 
-    # Test streaming (1 query)
-    print("\n  --- Streaming Test ---")
-    stream_pass = False
-    try:
-        stream_q = subset[0]["question"]
-        token_count = 0
-        async for event in service.answer_query_stream(
-            query=stream_q, use_hybrid_search=False, use_auto_filters=False, limit=3
-        ):
-            if event.get("type") == "token":
-                token_count += 1
-            if event.get("type") == "done":
-                stream_pass = True
-        print(f"    Streaming: PASS ({token_count} tokens received)")
-    except Exception as e:
-        print(f"    Streaming: FAIL ({e})")
+                # Metrics
+                kw_ov = keyword_overlap(expected, answer)
+                halluc = _check_hallucination(answer, context_texts)
 
-    # Summary
-    total = len(results)
-    avg_kw = sum(r["kw_overlap"] for r in results) / max(total, 1)
-    citation_rate = sum(1 for r in results if r["has_citations"]) / max(total, 1)
-    source_rate = sum(1 for r in results if r["source_match"]) / max(total, 1)
-    avg_latency = sum(r["latency"] for r in results) / max(total, 1)
+                # Source accuracy: does any citation come from the right document?
+                target_plan = _extract_plan_from_question(query)
+                citation_sources = [c.get("source", "").lower() for c in citations]
+                if target_plan:
+                    plan_words = target_plan.split()
+                    source_correct = any(
+                        all(w in src for w in plan_words) for src in citation_sources
+                    )
+                else:
+                    plan_kws = [w for w in str(plan).lower().split() if len(w) > 3]
+                    source_correct = any(
+                        any(kw in src for kw in plan_kws) for src in citation_sources
+                    ) if plan_kws else True  # no plan to check against
 
-    print(f"\n  --- Generation Summary ---")
-    print_metric("Avg keyword overlap:", f"{avg_kw:.3f}")
-    print_metric("Citation presence:", f"{100*citation_rate:.0f}%")
-    print_metric("Source accuracy:", f"{100*source_rate:.0f}%")
-    print_metric("Avg generation latency:", f"{avg_latency:.1f}s")
-    print_metric("Streaming test:", "PASS" if stream_pass else "FAIL")
+                results.append({
+                    "question": query,
+                    "plan": str(plan),
+                    "expected_answer": expected,
+                    "generated_answer": answer,
+                    "kw_overlap": round(kw_ov, 3),
+                    "grounded_ratio": halluc["grounded_ratio"],
+                    "citation_count": halluc["citation_count"],
+                    "has_refusal": halluc["has_refusal"],
+                    "source_correct": source_correct,
+                    "latency": round(elapsed, 2),
+                    "retrieved_chunks": [
+                        {
+                            "rank": idx + 1,
+                            "source": c.get("source", ""),
+                            "score": round(c.get("score", 0), 4),
+                            "text": c.get("text", "")[:500],
+                        }
+                        for idx, c in enumerate(citations[:5])
+                    ],
+                })
 
-    return {
-        "avg_kw_overlap": round(avg_kw, 3),
-        "citation_rate": round(citation_rate, 3),
-        "source_accuracy": round(source_rate, 3),
-        "avg_latency": round(avg_latency, 1),
-        "streaming_pass": stream_pass,
-    }
+                status = "OK" if kw_ov > 0.1 else "LOW"
+                print(f"[{status}] kw={kw_ov:.2f} grnd={halluc['grounded_ratio']:.2f} "
+                      f"cite={halluc['citation_count']} src={'Y' if source_correct else 'N'} "
+                      f"{elapsed:.1f}s")
+
+            except Exception as e:
+                elapsed = time.time() - start
+                results.append({
+                    "question": query, "plan": str(plan),
+                    "expected_answer": expected,
+                    "generated_answer": "",
+                    "kw_overlap": 0, "grounded_ratio": 0,
+                    "citation_count": 0, "has_refusal": False,
+                    "source_correct": False, "latency": round(elapsed, 2),
+                    "error": str(e),
+                })
+                print(f"[ERR] {str(e)[:50]}")
+
+        # Config summary
+        total = len(results)
+        avg_kw = sum(r["kw_overlap"] for r in results) / max(total, 1)
+        avg_grnd = sum(r["grounded_ratio"] for r in results) / max(total, 1)
+        avg_cite = sum(r["citation_count"] for r in results) / max(total, 1)
+        src_rate = sum(1 for r in results if r["source_correct"]) / max(total, 1)
+        avg_lat = sum(r["latency"] for r in results) / max(total, 1)
+        refusal_ct = sum(1 for r in results if r["has_refusal"])
+
+        print(f"\n  --- {cfg_name} Summary ---")
+        print_metric("Avg KW overlap:", f"{avg_kw:.3f}")
+        print_metric("Avg grounded ratio:", f"{avg_grnd:.3f}")
+        print_metric("Avg citations/answer:", f"{avg_cite:.1f}")
+        print_metric("Source accuracy:", f"{100*src_rate:.1f}%")
+        print_metric("Refusals:", f"{refusal_ct}/{total}")
+        print_metric("Avg latency:", f"{avg_lat:.1f}s")
+
+        all_config_results[cfg_name] = {
+            "avg_kw_overlap": round(avg_kw, 3),
+            "avg_grounded_ratio": round(avg_grnd, 3),
+            "avg_citations": round(avg_cite, 1),
+            "source_accuracy": round(src_rate, 3),
+            "refusals": refusal_ct,
+            "avg_latency": round(avg_lat, 1),
+        }
+        all_detailed[cfg_name] = results
+
+    # Comparison table
+    print(f"\n  {'='*75}")
+    print(f"  GENERATION COMPARISON")
+    print(f"  {'='*75}")
+    print(f"  {'Config':<25} {'KW_Ov':>6} {'Ground':>7} {'Cites':>6} {'SrcAcc':>7} {'Refuse':>7} {'Latency':>8}")
+    print(f"  {'-'*75}")
+    for cfg_name, m in all_config_results.items():
+        print(f"  {cfg_name:<25} {m['avg_kw_overlap']:>6.3f} {m['avg_grounded_ratio']:>7.3f} "
+              f"{m['avg_citations']:>6.1f} {m['source_accuracy']*100:>6.1f}% "
+              f"{m['refusals']:>7} {m['avg_latency']:>7.1f}s")
+
+    # Save detailed results for the best config (by kw_overlap)
+    best_cfg = max(all_config_results, key=lambda k: all_config_results[k]["avg_kw_overlap"])
+    print(f"\n  Best config: {best_cfg}")
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    detail_path = os.path.join(os.path.dirname(__file__), f"generation_details_{timestamp}.json")
+    with open(detail_path, "w", encoding="utf-8") as f:
+        json.dump({
+            "timestamp": timestamp,
+            "llm_model": settings.LLM_MODEL_NAME,
+            "best_config": best_cfg,
+            "metrics_summary": all_config_results,
+            "questions": all_detailed[best_cfg],
+        }, f, indent=2, ensure_ascii=False, default=str)
+    print(f"  Detailed results saved: {detail_path}")
+
+    return all_config_results
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -628,6 +928,12 @@ async def main():
         default=0,
         help="Limit number of PDFs to ingest (0 = all)",
     )
+    parser.add_argument(
+        "--llm-metadata",
+        action="store_true",
+        default=False,
+        help="Enable LLM-based metadata extraction during ingestion",
+    )
     args = parser.parse_args()
 
     print_header(f"RAG PIPELINE EVALUATION - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
@@ -639,7 +945,7 @@ async def main():
     all_results = {}
 
     if args.test in ("all", "ingest"):
-        all_results["ingestion"] = await test_ingestion(limit=args.limit)
+        all_results["ingestion"] = await test_ingestion(limit=args.limit, use_llm_metadata=args.llm_metadata)
 
     if args.test in ("all", "chunking"):
         all_results["chunking"] = await test_chunking_and_metadata()

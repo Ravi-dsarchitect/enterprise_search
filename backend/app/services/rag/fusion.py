@@ -71,18 +71,28 @@ class ReciprocalRankFusion:
             reverse=True
         )
         
+        # Normalize RRF scores to [0, 1] range so they're comparable
+        # with cosine similarity scores from vector-only search
+        top_ids = sorted_doc_ids[:limit]
+        if top_ids:
+            raw_scores = [rrf_scores[doc_id] for doc_id in top_ids]
+            max_rrf = max(raw_scores)
+            min_rrf = min(raw_scores) if len(raw_scores) > 1 else 0.0
+            rrf_range = max_rrf - min_rrf if max_rrf > min_rrf else max_rrf  # avoid /0
+
         # Build final result list
         fused_results = []
-        for doc_id in sorted_doc_ids[:limit]:
+        for doc_id in top_ids:
             doc = doc_data[doc_id].copy()
-            # Add RRF score to document
-            doc["rrf_score"] = rrf_scores[doc_id]
-            # Keep original score if it exists, rename it
+            raw_rrf = rrf_scores[doc_id]
+            # Normalize to [0, 1]: top result gets 1.0
+            normalized = (raw_rrf - min_rrf) / rrf_range if rrf_range > 0 else 1.0
+            doc["rrf_score"] = raw_rrf
             if "score" in doc:
                 doc["original_score"] = doc["score"]
-            doc["score"] = rrf_scores[doc_id]  # Use RRF as primary score
+            doc["score"] = normalized
             fused_results.append(doc)
-        
+
         return fused_results
 
 

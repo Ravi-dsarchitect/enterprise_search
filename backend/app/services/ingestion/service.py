@@ -13,30 +13,23 @@ from app.services.ingestion.interfaces import DocumentParser, Chunker, Embedder
 from app.services.ingestion.parsers import DocumentParserFactory
 from app.services.ingestion.chunkers import (
     RecursiveChunker,
-    SemanticChunker,
-    LayoutAwareChunker,
-    HybridLayoutSemanticChunker,
-    EnrichedChunk
+    StructuredChunker,
+    EnrichedChunk,
+    classify_section,
 )
+from app.services.ingestion.interfaces import StructuredChunk
 from app.services.ingestion.metadata import MetadataExtractor, get_section_display_name, enrich_chunk_metadata
 
 
 class IngestionService:
-    def __init__(self, use_layout_aware: bool = True, use_llm_metadata: bool = True):
+    def __init__(self, use_llm_metadata: bool = True):
         self.qdrant: QdrantClient = get_qdrant_client()
 
         # Use cached embedder (loaded once, reused across requests)
         self.embedder: Embedder = get_cached_embedder()
 
-        # Use Layout-Aware Chunker for LIC documents (recommended)
-        # Falls back to Semantic Chunker if disabled
-        self.use_layout_aware = use_layout_aware
-        if use_layout_aware:
-            # HybridLayoutSemanticChunker combines layout awareness with semantic refinement
-            # Optimized chunk size: 1800 chars (~450 tokens) based on RAG best practices
-            self.chunker = HybridLayoutSemanticChunker(embedder=self.embedder, chunk_size=1800)
-        else:
-            self.chunker: Chunker = SemanticChunker(embedder=self.embedder)
+        # StructuredChunker uses ParsedDocument with heading-based section grouping
+        self.chunker = StructuredChunker()
 
         # LLM-based metadata extraction (optional - can be disabled for local testing)
         self.use_llm_metadata = use_llm_metadata
@@ -65,89 +58,84 @@ class IngestionService:
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-    async def process_local_file(self, file_path: str, original_filename: str = None, additional_metadata: dict = None):
+    async def process_local_file(self, file_path: str, original_filename: str = None, additional_metadata: dict = None, verbose: bool = False):
         """
         Process a file that already exists locally (e.g., from bulk ingestion).
-        Uses layout-aware chunking for better LIC document handling.
+        Uses StructuredChunker with ParsedDocument for heading-aware chunking.
         """
         filename = original_filename or os.path.basename(file_path)
+        _p = (lambda msg: print(msg, end="", flush=True)) if verbose else (lambda msg: None)
 
-        # 1. Parse Document
+        # 1. Parse Document (structured: blocks, tables, headings)
+        _p("Parse")
         parser = DocumentParserFactory.get_parser(file_path)
-        text = parser.parse(file_path)
+        parsed_doc = parser.parse_structured(file_path)
+        text = parsed_doc.full_text
 
         # 2. Extract Metadata (LLM-based or rule-based fallback)
+        _p(" > Meta")
+        tables_preview = "\n\n".join(t.markdown for t in parsed_doc.tables if t.markdown)
+
         if self.use_llm_metadata and self.metadata_extractor:
-            metadata = self.metadata_extractor.extract_metadata(text, filename)
+            metadata = self.metadata_extractor.extract_metadata(
+                text, filename,
+                headings=parsed_doc.headings,
+                tables_preview=tables_preview or None,
+            )
         else:
-            # Rule-based metadata extraction (no LLM needed)
             metadata = self._extract_basic_metadata(text, filename)
+
+        # Post-process: fix plan_name for generic docs (claims guides, grievance, etc.)
+        metadata = self._fix_generic_doc_metadata(metadata, filename)
 
         # Merge additional metadata (e.g., from folder structure)
         if additional_metadata:
             metadata.update(additional_metadata)
 
-        # 3. Chunk Text with Layout Awareness
-        # Use chunk_with_metadata for enriched chunks if available
-        if self.use_layout_aware and hasattr(self.chunker, 'chunk_with_metadata'):
-            enriched_chunks: List[EnrichedChunk] = self.chunker.chunk_with_metadata(text)
-            chunk_texts = [c.text for c in enriched_chunks]
-        else:
-            chunk_texts = self.chunker.chunk(text)
-            enriched_chunks = None
+        # 3. Chunk using StructuredChunker with ParsedDocument
+        _p(" > Chunk")
+        structured_chunks: List[StructuredChunk] = self.chunker.chunk_structured(
+            parsed_doc, doc_metadata=metadata
+        )
+        chunk_texts = [c.text for c in structured_chunks]
+        _p(f"({len(chunk_texts)})")
 
         # 4. Generate Embeddings
+        _p(" > Embed")
         embeddings = self.embedder.embed_documents(chunk_texts)
 
         # 5. Index in Qdrant with Rich Metadata
         points = []
         chunk_ids = [str(uuid.uuid4()) for _ in chunk_texts]
 
-        for i, (chunk_text, embedding) in enumerate(zip(chunk_texts, embeddings)):
+        for i, (chunk, embedding) in enumerate(zip(structured_chunks, embeddings)):
             # Convert date fields to timestamps for numeric range queries
             processed_metadata = self._convert_dates_to_timestamps(metadata)
 
-            # Get enriched chunk data if available
-            if enriched_chunks:
-                enriched = enriched_chunks[i]
-                section_type = enriched.section_type
-                content_type = enriched.content_type
-                section_header = enriched.section_header
-                page_number = enriched.page_number
+            section_type = chunk.section_type
+            content_type = chunk.content_type
+            section_header = chunk.heading
+            page_number = chunk.page_number
 
-                # Get additional chunk-level metadata (pattern-based, no LLM needed)
-                chunk_meta = enrich_chunk_metadata(
-                    chunk_text=chunk_text,
-                    section_type=section_type,
-                    content_type=content_type,
-                    doc_metadata=metadata
-                )
+            # Get additional chunk-level metadata (pattern-based, no LLM needed)
+            chunk_meta = enrich_chunk_metadata(
+                chunk_text=chunk.text,
+                section_type=section_type,
+                content_type=content_type,
+                doc_metadata=metadata,
+            )
 
-                entity_hints = chunk_meta.get("entity_hints", [])
-                chunk_tags = chunk_meta.get("chunk_tags", [])
-            else:
-                # Fallback to basic enrichment
-                section_type = "general"
-                content_type = self._detect_content_type_basic(chunk_text)
-                section_header = None
-                page_number = None
-                entity_hints = []
-                chunk_tags = []
+            entity_hints = chunk_meta.get("entity_hints", [])
+            chunk_tags = chunk_meta.get("chunk_tags", [])
 
-                # Basic entity detection
-                if any(x in chunk_text for x in ["₹", "Rs.", "Rupees", "Premium"]):
-                    entity_hints.append("Financial")
-                if any(x in chunk_text for x in ["Year", "Age", "Maturity", "Deadline"]):
-                    entity_hints.append("Time/Duration")
-
-            # Generate dynamic chunk title using 3-layer metadata
+            # Generate dynamic chunk title
             chunk_meta_for_title = {
                 "chunk_tags": chunk_tags,
                 "section_type": section_type,
                 "entity_hints": entity_hints,
             }
             chunk_title = self._extract_chunk_title(
-                chunk_text, section_header, i,
+                chunk.text, section_header, i,
                 chunk_meta=chunk_meta_for_title,
                 doc_metadata=metadata,
             )
@@ -155,10 +143,11 @@ class IngestionService:
             # Build payload with enriched metadata
             payload = {
                 "source": filename,
-                "text": chunk_text,
+                "source_file": filename,
+                "text": chunk.text,
                 "chunk_index": i,
 
-                # Layout-aware fields
+                # Structure-aware fields
                 "section_type": section_type,
                 "section_display": get_section_display_name(section_type),
                 "content_type": content_type,
@@ -167,7 +156,7 @@ class IngestionService:
 
                 # Chunk metadata
                 "chunk_title": chunk_title,
-                "chunk_char_count": len(chunk_text),
+                "chunk_char_count": len(chunk.text),
                 "entity_hints": entity_hints,
                 "chunk_tags": chunk_tags,
 
@@ -185,6 +174,7 @@ class IngestionService:
                 payload=payload
             ))
 
+        _p(" > Index")
         self.qdrant.upsert(
             collection_name=settings.QDRANT_COLLECTION_NAME,
             points=points
@@ -196,17 +186,39 @@ class IngestionService:
             "chunks": len(chunk_texts),
             "status": "indexed",
             "extracted_metadata": metadata,
-            "chunking_method": "layout_aware" if self.use_layout_aware else "semantic"
+            "chunking_method": "structured",
         }
 
-    def _detect_content_type_basic(self, text: str) -> str:
-        """Basic content type detection fallback."""
-        text_stripped = text.strip()
-        if text_stripped.startswith(("- ", "* ", "1. ", "• ")):
-            return "List"
-        if "   " in text and "\n" in text:
-            return "Table"
-        return "Paragraph"
+    # Filename patterns that indicate a generic/non-plan-specific document
+    _GENERIC_DOC_PATTERNS = {
+        r"claim": "Claim Guide",
+        r"grievance|complaint|redressal": "Grievance & Support",
+        r"faq|frequently": "FAQ",
+        r"circular|notification": "Circular",
+        r"manual|sop|procedure": "Manual",
+        r"report|annual": "Report",
+        r"endowment_plan_types|moneyback_plan_types|term_insurance_plan_types|whole_life_plan_type": "Plan Comparison",
+    }
+
+    def _fix_generic_doc_metadata(self, metadata: dict, filename: str) -> dict:
+        """
+        Post-process metadata to fix plan_name for generic documents.
+        The LLM may pick up a plan name referenced in the content, but the
+        document itself is not about that specific plan.
+        """
+        import re
+        fn_lower = filename.lower()
+        for pattern, category in self._GENERIC_DOC_PATTERNS.items():
+            if re.search(pattern, fn_lower):
+                # Override plan_name to the document's actual subject
+                # Use the filename-derived title, not a plan mentioned in content
+                doc_title = os.path.splitext(filename)[0]
+                # Clean up underscores/hyphens for readability
+                doc_title = doc_title.replace("_", " ").replace("-", " ").strip()
+                metadata["plan_name"] = doc_title
+                metadata["category"] = category
+                break
+        return metadata
 
     def _extract_basic_metadata(self, text: str, filename: str) -> dict:
         """

@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     MAX_TABLE_CHUNK: int = 2500
 
     class Config:
-        env_file = ".env"
+        env_file = ("../.env", ".env")
         extra = "ignore"
 
 

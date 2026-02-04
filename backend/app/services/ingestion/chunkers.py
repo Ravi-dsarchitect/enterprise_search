@@ -152,7 +152,7 @@ class StructuredChunker(Chunker):
         self.chunk_size = chunk_size or settings.CHUNK_SIZE
         self.chunk_overlap = chunk_overlap or settings.CHUNK_OVERLAP
         self.max_table_chunk = max_table_chunk or settings.MAX_TABLE_CHUNK
-        self.min_chunk_size = 200
+        self.min_chunk_size = 400
         self.max_chunk_size = self.chunk_size * 1.5
 
         self.fallback_splitter = RecursiveCharacterTextSplitter(
@@ -289,7 +289,7 @@ class StructuredChunker(Chunker):
     ) -> List[StructuredChunk]:
         """Split a large section into chunks at sentence boundaries with overlap."""
         sentences = split_into_sentences(text)
-        chunks = []
+        raw_chunks = []
         current_chunk_sentences = []
         current_size = 0
 
@@ -299,16 +299,7 @@ class StructuredChunker(Chunker):
             if current_size + sentence_len > self.chunk_size and current_chunk_sentences:
                 # Save current chunk
                 chunk_text = " ".join(current_chunk_sentences)
-                chunks.append(
-                    StructuredChunk(
-                        text=chunk_text,
-                        section_type=section_type,
-                        content_type="text",
-                        heading=heading,
-                        page_number=page_number,
-                        parent_text=parent_text,
-                    )
-                )
+                raw_chunks.append(chunk_text)
 
                 # Overlap: keep last 1-2 sentences
                 overlap_sentences = current_chunk_sentences[-2:]
@@ -321,18 +312,27 @@ class StructuredChunker(Chunker):
         # Save remaining
         if current_chunk_sentences:
             chunk_text = " ".join(current_chunk_sentences)
-            chunks.append(
-                StructuredChunk(
-                    text=chunk_text,
-                    section_type=section_type,
-                    content_type="text",
-                    heading=heading,
-                    page_number=page_number,
-                    parent_text=parent_text,
-                )
-            )
+            raw_chunks.append(chunk_text)
 
-        return chunks
+        # Safety net: force-split any chunk still over max_chunk_size
+        final_texts = []
+        for chunk_text in raw_chunks:
+            if len(chunk_text) > self.max_chunk_size:
+                final_texts.extend(self.fallback_splitter.split_text(chunk_text))
+            else:
+                final_texts.append(chunk_text)
+
+        return [
+            StructuredChunk(
+                text=t,
+                section_type=section_type,
+                content_type="text",
+                heading=heading,
+                page_number=page_number,
+                parent_text=parent_text,
+            )
+            for t in final_texts
+        ]
 
     def _create_table_chunk(
         self, table: ParsedTable, doc_metadata: Dict
@@ -376,49 +376,63 @@ class StructuredChunker(Chunker):
     def _merge_small_chunks(
         self, chunks: List[StructuredChunk]
     ) -> List[StructuredChunk]:
-        """Merge consecutive chunks that are too small."""
+        """
+        Multi-pass bidirectional merge of undersized chunks.
+        Merges when EITHER current or next chunk is below min_chunk_size.
+        Repeats until no more merges happen (max 5 passes).
+        """
         if not chunks:
             return chunks
 
-        merged = []
-        current = None
+        def _single_pass(chunk_list):
+            merged = []
+            current = None
+            did_merge = False
 
-        for chunk in chunks:
-            if current is None:
-                current = chunk
-                continue
+            for chunk in chunk_list:
+                if current is None:
+                    current = chunk
+                    continue
 
-            current_len = len(current.text)
-            chunk_len = len(chunk.text)
-            combined_len = current_len + chunk_len
+                current_len = len(current.text)
+                chunk_len = len(chunk.text)
+                combined_len = current_len + chunk_len
 
-            # Merge if current is too small and combined fits
-            should_merge = (
-                current_len < self.min_chunk_size
-                and combined_len < self.max_chunk_size
-                and chunk.content_type == current.content_type
-            )
+                # Merge if EITHER chunk is below min size and combined fits
+                should_merge = (
+                    (current_len < self.min_chunk_size or chunk_len < self.min_chunk_size)
+                    and combined_len < self.max_chunk_size
+                )
 
-            # Also merge same section type if combined fits
-            if (
-                not should_merge
-                and chunk.section_type == current.section_type
-                and combined_len < self.chunk_size
-            ):
-                should_merge = True
+                # Also merge same section type if combined fits in chunk_size
+                if (
+                    not should_merge
+                    and chunk.section_type == current.section_type
+                    and combined_len < self.chunk_size
+                ):
+                    should_merge = True
 
-            if should_merge:
-                current.text = current.text + "\n\n" + chunk.text
-                if not current.heading and chunk.heading:
-                    current.heading = chunk.heading
-            else:
+                if should_merge:
+                    current.text = current.text + "\n\n" + chunk.text
+                    if not current.heading and chunk.heading:
+                        current.heading = chunk.heading
+                    did_merge = True
+                else:
+                    merged.append(current)
+                    current = chunk
+
+            if current is not None:
                 merged.append(current)
-                current = chunk
 
-        if current is not None:
-            merged.append(current)
+            return merged, did_merge
 
-        return merged
+        result = chunks
+        for _ in range(5):
+            result, did_merge = _single_pass(result)
+            if not did_merge:
+                break
+
+        return result
 
     def _build_context_prefix(
         self, chunk: StructuredChunk, plan_name: str, plan_type: str

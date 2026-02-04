@@ -5,11 +5,11 @@ Layer 1: Rule-based regex (fast, per-chunk, no LLM)
     - enrich_chunk_metadata(): content pattern matching for tags
     - extract_structured_fields(): plan_number, UIN, ages, amounts, terms
 
-Layer 2: spaCy NER (fast, per-chunk, no LLM)
-    - SpacyExtractor: dates, monetary amounts, percentages, organizations
+Layer 2: spaCy NER — DISABLED (replaced by enhanced LLM extraction in Layer 3)
 
-Layer 3: LLM-based (slow, per-document only, Groq)
-    - MetadataExtractor: plan_name, plan_type, summary, target_audience
+Layer 3: LLM-based (per-document, Ollama/Mistral)
+    - MetadataExtractor: plan_name, plan_type, summary, target_audience,
+      NER entities, date taxonomy, membership types, dynamic fields
 """
 
 import re
@@ -187,71 +187,12 @@ def extract_structured_fields(text: str) -> Dict[str, Any]:
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Layer 2: spaCy NER extraction
+# Layer 2: spaCy NER extraction — DISABLED
+# Replaced by enhanced LLM extraction in Layer 3.
+# spaCy required heavy C compilation (blis, thinc) and ~1.5GB VRAM
+# for en_core_web_trf. LLM handles NER as part of document-level
+# metadata extraction instead.
 # ──────────────────────────────────────────────────────────────────────
-
-class SpacyExtractor:
-    """Extract named entities using spaCy. Lazy-loads model on first use."""
-
-    _nlp = None
-
-    @classmethod
-    def _get_nlp(cls):
-        if cls._nlp is None:
-            try:
-                import spacy
-                cls._nlp = spacy.load("en_core_web_trf")
-            except OSError:
-                print(
-                    "spaCy model 'en_core_web_trf' not found. "
-                    "Install with: python -m spacy download en_core_web_trf"
-                )
-                cls._nlp = False  # Mark as unavailable
-        return cls._nlp
-
-    @classmethod
-    def extract_entities(cls, text: str) -> Dict[str, List[str]]:
-        """
-        Run spaCy NER on text and return grouped entities.
-
-        Returns dict with keys: dates, money, percentages, organizations, persons
-        """
-        nlp = cls._get_nlp()
-        if not nlp:
-            return {}
-
-        # Cap text length for performance (spaCy is O(n))
-        doc = nlp(text[:5000])
-
-        entities: Dict[str, List[str]] = {
-            "ner_dates": [],
-            "ner_money": [],
-            "ner_orgs": [],
-            "ner_persons": [],
-            "ner_percentages": [],
-        }
-
-        for ent in doc.ents:
-            val = ent.text.strip()
-            if not val:
-                continue
-            if ent.label_ == "DATE":
-                entities["ner_dates"].append(val)
-            elif ent.label_ == "MONEY":
-                entities["ner_money"].append(val)
-            elif ent.label_ == "PERCENT":
-                entities["ner_percentages"].append(val)
-            elif ent.label_ == "ORG":
-                entities["ner_orgs"].append(val)
-            elif ent.label_ == "PERSON":
-                entities["ner_persons"].append(val)
-
-        # Deduplicate and cap
-        for key in entities:
-            entities[key] = list(dict.fromkeys(entities[key]))[:10]
-
-        # Remove empty keys
-        return {k: v for k, v in entities.items() if v}
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -541,21 +482,32 @@ def enrich_chunk_metadata(
     for key, value in structured.items():
         chunk_meta[key] = value
 
-    # --- Layer 2: spaCy NER ---
-    ner_entities = SpacyExtractor.extract_entities(text_normalized)
-    for key, value in ner_entities.items():
-        chunk_meta[key] = value
+    # --- Layer 2: spaCy NER — DISABLED (handled by LLM in Layer 3) ---
+    # NER entities are now extracted at document level via MetadataExtractor
+    # and inherited into chunks through doc_metadata.
 
     # --- Inherit document-level metadata ---
     if doc_metadata:
+        # Core identification fields
         for key in ["plan_name", "plan_type", "plan_number", "uin", "category"]:
             if key in doc_metadata and doc_metadata[key]:
                 chunk_meta[f"doc_{key}"] = doc_metadata[key]
+
         # If chunk didn't detect plan_number but doc has it, inherit
         if "plan_number" not in chunk_meta and doc_metadata.get("plan_number"):
             chunk_meta["plan_number"] = doc_metadata["plan_number"]
         if "uin" not in chunk_meta and doc_metadata.get("uin"):
             chunk_meta["uin"] = doc_metadata["uin"]
+
+        # Inherit LLM-extracted NER and date fields from Layer 3
+        for key in [
+            "organizations", "persons_mentioned",
+            "document_date", "effective_date", "notification_date",
+            "date_taxonomy", "membership_type", "participation_type",
+            "risk_classification", "additional_metadata",
+        ]:
+            if key in doc_metadata and doc_metadata[key]:
+                chunk_meta[key] = doc_metadata[key]
 
     return chunk_meta
 
@@ -612,7 +564,7 @@ class MetadataExtractor:
         system_prompt = """You are an expert metadata extractor for Life Insurance Corporation (LIC) of India documents.
 Analyze the document and extract structured metadata as JSON.
 
-REQUIRED FIELDS:
+SECTION 1 — CORE IDENTIFICATION (always extract):
 - plan_name: Name of the insurance plan (e.g., "Jeevan Utsav", "Bima Ratna"), null if not a plan document
 - plan_number: Plan/Table number (e.g., "871", "943"), null if not found
 - uin: Unique Identification Number (e.g., "512N339V02"), null if not found
@@ -624,7 +576,46 @@ REQUIRED FIELDS:
 - premium_type: One of [Single Premium, Limited Pay, Regular Premium, Flexible Premium], null if unclear
 - keywords: List of 5-7 keywords
 
-Return ONLY valid JSON."""
+SECTION 2 — NAMED ENTITIES (extract all found, empty list if none):
+- organizations: List of organizations mentioned (e.g., ["LIC of India", "IRDAI", "LICI"])
+- persons_mentioned: List of any named persons (signatories, officials), empty list if none
+
+SECTION 3 — DATE TAXONOMY (extract all dates found, null if not found):
+- document_date: Date the document was created/issued (e.g., "2024-01-15"), null if unknown
+- effective_date: Date the plan/circular becomes effective, null if not found
+- notification_date: Date of IRDAI notification or approval, null if not found
+- date_taxonomy: Object with date categories found in the document, e.g.:
+  {
+    "launch_date": "date the plan was launched",
+    "last_modified": "date of last revision",
+    "premium_due_dates": "when premiums are due",
+    "maturity_dates": "when policy matures",
+    "vesting_dates": "when pension/annuity vests",
+    "claim_filing_deadline": "deadline to file claims",
+    "free_look_period": "cancellation window dates"
+  }
+  Only include date categories actually present in the document. Values should be the actual dates or descriptions found.
+
+SECTION 4 — MEMBERSHIP & PARTICIPATION:
+- membership_type: Type of membership/participation (e.g., "Individual", "Group", "Joint Life", "Family Floater"), null if not applicable
+- participation_type: One of ["Participating (with profits)", "Non-Participating", "Unit-Linked", null]
+- risk_classification: One of ["Non-Linked Non-Participating", "Non-Linked Participating", "Linked Non-Participating", "Linked Participating", null]
+
+SECTION 5 — DYNAMIC FIELDS (extract any other important metadata you identify):
+- additional_metadata: Object with any other important fields you identify from the document that don't fit above categories. Use descriptive keys. Examples:
+  {
+    "minimum_sum_assured": "Rs. 1,00,000",
+    "maximum_sum_assured": "No limit",
+    "entry_age_min": "18 years",
+    "entry_age_max": "65 years",
+    "maturity_age_max": "80 years",
+    "policy_term_options": "15/20/25 years",
+    "premium_paying_term": "5/10/12 years",
+    "loan_available": true,
+    "surrender_value_available_after": "3 years"
+  }
+
+Return ONLY valid JSON. Do not include markdown formatting or code blocks."""
 
         from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -647,7 +638,18 @@ Return ONLY valid JSON."""
                 content = content[:-3]
             content = content.strip()
 
-            return json.loads(content)
+            # Try direct parse first
+            try:
+                return json.loads(content)
+            except json.JSONDecodeError:
+                # Small models often add extra text after JSON.
+                # Find the first { and its matching } using a decoder.
+                decoder = json.JSONDecoder()
+                start = content.find("{")
+                if start != -1:
+                    obj, _ = decoder.raw_decode(content, start)
+                    return obj
+                raise
         except Exception as e:
             print(f"LLM metadata extraction failed: {e}")
             # Fall back to rule-based extraction from text
@@ -671,6 +673,7 @@ Return ONLY valid JSON."""
     def _fallback_extract(self, text: str, filename: str) -> Dict[str, Any]:
         """Rule-based fallback when LLM is unavailable."""
         meta: Dict[str, Any] = {
+            # Section 1: Core
             "plan_name": None,
             "plan_number": None,
             "uin": None,
@@ -678,6 +681,23 @@ Return ONLY valid JSON."""
             "category": "Other",
             "summary": "",
             "keywords": [],
+            "key_benefits": [],
+            "premium_type": None,
+            "target_audience": None,
+            # Section 2: NER
+            "organizations": ["LIC of India"],
+            "persons_mentioned": [],
+            # Section 3: Dates
+            "document_date": None,
+            "effective_date": None,
+            "notification_date": None,
+            "date_taxonomy": {},
+            # Section 4: Membership
+            "membership_type": None,
+            "participation_type": None,
+            "risk_classification": None,
+            # Section 5: Dynamic
+            "additional_metadata": {},
         }
 
         fields = extract_structured_fields(text[:5000])

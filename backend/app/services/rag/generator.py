@@ -1,9 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
-from langchain_openai import ChatOpenAI
-from langchain_groq import ChatGroq
-from langchain_community.chat_models import ChatOllama
-from langchain_aws import ChatBedrock
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from app.core.config import settings
 
@@ -21,22 +17,33 @@ class BaseLangChainGenerator(LLMGenerator):
     def _build_messages(self, query: str, context: List[Dict[str, Any]], conversation_history: list = None):
         """Build messages for both streaming and non-streaming."""
         context_str = "\n\n".join([
-            f"Source: {item['source']}\nContent: {item['text']}" 
-            for item in context
+            f"[{i+1}] Source: {item['source']}\n{item['text']}"
+            for i, item in enumerate(context)
         ])
-        
-        system_prompt = """You are an expert assistant for the Life Insurance Corporation (LIC) of India.
-        Your goal is to provide accurate, professional, and well-structured answers based ONLY on the provided context.
-        
-        Guidelines:
-        1. **Citations**: Always cite the source document for your facts (e.g., "[Source: Job_Aid.pdf]").
-        2. **Structure**: Use Markdown headers, bullet points, and tables where appropriate (especially for comparing plans or benefits).
-        3. **Accuracy**: If the context represents different plans, be careful not to mix their features. Explicitly state which plan a feature belongs to.
-        4. **Unknowns**: If the answer is not in the context, say "I don't have sufficient information in the provided documents."
-        
-        Format your response in Markdown."""
-        
-        user_prompt = f"Context:\n{context_str}\n\nQuestion: {query}"
+
+        system_prompt = """You are a document-grounded assistant for the Life Insurance Corporation (LIC) of India.
+
+STRICT RULES:
+- Answer ONLY using information explicitly stated in the numbered context passages below.
+- DO NOT use any outside knowledge, training data, or general information about LIC or insurance.
+- If the context does not contain enough information to answer, respond EXACTLY with: "I don't have sufficient information in the provided documents to answer this question."
+- NEVER guess, infer beyond what is stated, or fill gaps with general knowledge.
+
+CITATION FORMAT:
+- Every factual statement MUST cite the source using [Source: filename.pdf].
+- If multiple sources support a fact, cite all of them.
+
+RESPONSE FORMAT:
+- Use Markdown: headers, bullet points, and tables where appropriate.
+- When comparing plans, use a table and clearly label which plan each detail belongs to.
+- Keep answers focused and concise — do not add disclaimers or boilerplate beyond what the context states."""
+
+        user_prompt = f"""Context passages:
+{context_str}
+
+Question: {query}
+
+Answer using ONLY the context passages above. Cite sources for every fact."""
         
         messages = [SystemMessage(content=system_prompt)]
         
@@ -68,6 +75,7 @@ class BaseLangChainGenerator(LLMGenerator):
 
 class OpenAIGenerator(BaseLangChainGenerator):
     def __init__(self):
+        from langchain_openai import ChatOpenAI
         model = settings.LLM_MODEL_NAME or "gpt-4o"
         llm = ChatOpenAI(
             model=model,
@@ -79,6 +87,7 @@ class OpenAIGenerator(BaseLangChainGenerator):
 class GroqGenerator(BaseLangChainGenerator):
     """Groq inference platform - fast and free tier available"""
     def __init__(self):
+        from langchain_groq import ChatGroq
         model = settings.LLM_MODEL_NAME or "llama-3.3-70b-versatile"
         llm = ChatGroq(
             model=model,
@@ -89,6 +98,7 @@ class GroqGenerator(BaseLangChainGenerator):
 
 class OllamaGenerator(BaseLangChainGenerator):
     def __init__(self):
+        from langchain_ollama import ChatOllama
         model = settings.LLM_MODEL_NAME or "llama3"
         llm = ChatOllama(
             model=model,
@@ -99,6 +109,7 @@ class OllamaGenerator(BaseLangChainGenerator):
 
 class BedrockGenerator(BaseLangChainGenerator):
     def __init__(self):
+        from langchain_aws import ChatBedrock
         model = settings.LLM_MODEL_NAME or "anthropic.claude-v2"
         # Credentials are Auto-resolved from env vars AWS_ACCESS_KEY_ID etc.
         # or passed explicitly if needed.

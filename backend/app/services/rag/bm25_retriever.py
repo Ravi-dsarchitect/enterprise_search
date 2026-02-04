@@ -39,22 +39,26 @@ class BM25Retriever:
         if self._index_built and not force_rebuild:
             print("BM25 index already built. Use force_rebuild=True to rebuild.")
             return
-        
-        print("🔨 Building BM25 index from Qdrant collection...")
-        
+
+        print("  Building BM25 index from Qdrant collection...")
+
         # Fetch all documents from Qdrant
-        # Note: For very large collections, consider pagination
-        scroll_result = self.qdrant.scroll(
-            collection_name=settings.QDRANT_COLLECTION_NAME,
-            limit=10000,  # Adjust based on collection size
-            with_payload=True,
-            with_vectors=False  # We don't need vectors for BM25
-        )
-        
-        points = scroll_result[0]
+        try:
+            scroll_result = self.qdrant.scroll(
+                collection_name=settings.QDRANT_COLLECTION_NAME,
+                limit=10000,
+                with_payload=True,
+                with_vectors=False,
+            )
+            points = scroll_result[0]
+            print(f"  Fetched {len(points)} points from Qdrant")
+        except Exception as e:
+            print(f"  [WARN] BM25 index build failed (Qdrant scroll error): {e}")
+            self._index_built = True  # Mark as built to avoid retrying on every call
+            return
         
         if not points:
-            print("⚠️  No documents found in collection. BM25 index is empty.")
+            print("  [WARN] No documents found in collection. BM25 index is empty.")
             self.corpus = []
             self.tokenized_corpus = []
             self.bm25 = None
@@ -79,9 +83,9 @@ class BM25Retriever:
         if self.tokenized_corpus:
             self.bm25 = BM25Okapi(self.tokenized_corpus)
             self._index_built = True
-            print(f"✅ BM25 index built with {len(self.corpus)} documents")
+            print(f"  BM25 index built with {len(self.corpus)} documents")
         else:
-            print("⚠️  No valid documents to index")
+            print("  [WARN] No valid documents to index")
     
     def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """

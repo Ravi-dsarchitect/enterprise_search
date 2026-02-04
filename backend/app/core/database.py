@@ -5,7 +5,7 @@ from app.core.config import settings
 
 
 def get_qdrant_client() -> QdrantClient:
-    return QdrantClient(url=settings.QDRANT_URL)
+    return QdrantClient(url=settings.QDRANT_URL, timeout=30)
 
 
 def create_collection_with_indexes(client: QdrantClient):
@@ -117,4 +117,9 @@ def rebuild_bm25_index():
         if _bm25_retriever is not None:
             _bm25_retriever.build_index(force_rebuild=True)
         else:
-            get_cached_bm25_retriever()
+            # Create directly here instead of calling get_cached_bm25_retriever()
+            # to avoid deadlock (it also tries to acquire _bm25_lock)
+            from app.services.rag.bm25_retriever import BM25Retriever
+
+            _bm25_retriever = BM25Retriever()
+            _bm25_retriever.build_index()
