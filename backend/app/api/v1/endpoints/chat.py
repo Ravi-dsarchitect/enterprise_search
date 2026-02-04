@@ -16,7 +16,7 @@ class ChatRequest(BaseModel):
     conversation_history: Optional[List[Message]] = Field(default=None, description="Previous conversation messages for context")
     use_hyde: bool = Field(default=False, description="Enable HyDE (hypothetical document embeddings)")
     use_decomposition: bool = Field(default=False, description="Enable query decomposition")
-    use_hybrid_search: bool = Field(default=False, description="Enable hybrid search (BM25 + Vector)")
+    use_hybrid_search: bool = Field(default=True, description="Enable hybrid search (BM25 + Vector)")
     use_auto_filters: bool = Field(default=True, description="Auto-extract metadata filters from query")
     metadata_filters: Optional[Dict[str, Any]] = Field(default=None, description="Manual filter override (e.g., {'source': 'doc.pdf'})")
     limit: int = Field(default=5, ge=1, le=20, description="Number of results to retrieve")

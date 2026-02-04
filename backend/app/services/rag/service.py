@@ -1,6 +1,6 @@
 import time
 from typing import Dict, Any
-from app.services.rag.generator import LLMFactory, LLMGenerator
+from app.services.rag.generator import LLMFactory, LLMGenerator, AnswerCritic
 from app.services.rag.query_transformer import QueryTransformer
 from app.services.rag.query_analyzer import QueryAnalyzer
 from app.services.rag.retriever import Retriever
@@ -25,6 +25,27 @@ class RAGService:
         self.generator: LLMGenerator = LLMFactory.create_generator()
         self.query_transformer = QueryTransformer()
         self.query_analyzer = QueryAnalyzer()
+        self.critic = AnswerCritic()
+
+    def _build_context_str(self, context):
+        """Build formatted context string for the critic (same format as generator)."""
+        parts = []
+        for i, item in enumerate(context):
+            payload = item.get("payload", {})
+            source = item.get("source", "unknown")
+            page = payload.get("page_number", "")
+            section = payload.get("section_header", "") or ""
+            score = item.get("score", 0)
+
+            header = f"[{i+1}] Source: {source}"
+            if page:
+                header += f" | Page {page}"
+            if section:
+                header += f" | Section: {section}"
+            header += f" (relevance: {score:.2f})"
+
+            parts.append(f"{header}\n{item['text']}\n{'='*60}")
+        return "\n\n".join(parts)
 
     async def answer_query(
         self, 
@@ -98,10 +119,21 @@ class RAGService:
         llm_start = time.time()
         answer = self.generator.generate_answer(query, final_context, conversation_history=conversation_history)
         print(f"⏱️  LLM generation took: {time.time() - llm_start:.2f}s")
-        
+
+        # 6. Critic: verify answer against source passages
+        critic_start = time.time()
+        context_str = self._build_context_str(final_context)
+        verified_answer = self.critic.verify_and_fix(answer, query, context_str)
+        critic_time = time.time() - critic_start
+        if verified_answer != answer:
+            print(f"🔄 Critic corrected the answer ({critic_time:.2f}s)")
+            answer = verified_answer
+        else:
+            print(f"✅ Critic passed the answer ({critic_time:.2f}s)")
+
         total_time = time.time() - start_time
         print(f"✅ Total query time: {total_time:.2f}s\n")
-        
+
         return {
             "query": query,
             "answer": answer,
@@ -204,8 +236,24 @@ class RAGService:
             }
         
         print(f"⏱️  LLM generation took: {time.time() - llm_start:.2f}s")
+
+        # 5. Critic: verify answer against source passages
+        critic_start = time.time()
+        context_str = self._build_context_str(final_context)
+        verified_answer = self.critic.verify_and_fix(full_answer, query, context_str)
+        critic_time = time.time() - critic_start
+        if verified_answer != full_answer:
+            print(f"🔄 Critic corrected the answer ({critic_time:.2f}s)")
+            full_answer = verified_answer
+            yield {
+                "type": "correction",
+                "data": full_answer
+            }
+        else:
+            print(f"✅ Critic passed the answer ({critic_time:.2f}s)")
+
         print(f"✅ Total query time: {time.time() - start_time:.2f}s\n")
-        
+
         # Yield completion event
         yield {
             "type": "done",

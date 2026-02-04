@@ -1,4 +1,5 @@
 import os
+import statistics
 from typing import List
 from collections import Counter
 
@@ -34,11 +35,18 @@ class PDFParser(DocumentParser):
         filename = os.path.basename(file_path)
 
         # Pass 1: PyMuPDF for text with structure
-        blocks, all_spans, total_pages = self._extract_text_with_structure(file_path)
+        blocks, all_spans, total_pages, page_dimensions = self._extract_text_with_structure(file_path)
 
         # Detect heading thresholds from font statistics
         body_size = self._detect_body_font_size(all_spans)
         self._assign_heading_levels(blocks, body_size)
+
+        # Compute median font size for slide detection
+        median_font_size = 0.0
+        if all_spans:
+            font_sizes = [s.font_size for s in all_spans if s.font_size > 0]
+            if font_sizes:
+                median_font_size = statistics.median(font_sizes)
 
         # Pass 2: pdfplumber for tables
         tables = self._extract_tables(file_path)
@@ -64,6 +72,8 @@ class PDFParser(DocumentParser):
             tables=tables,
             full_text=full_text,
             headings=headings,
+            page_dimensions=page_dimensions,
+            median_font_size=median_font_size,
         )
 
     def _extract_text_with_structure(self, file_path: str):
@@ -72,6 +82,12 @@ class PDFParser(DocumentParser):
         blocks = []
         all_spans = []
         total_pages = len(doc)
+
+        # Capture page dimensions from first page for slide detection
+        page_dimensions = ()
+        if total_pages > 0:
+            rect = doc[0].rect
+            page_dimensions = (rect.width, rect.height)
 
         for page_num in range(total_pages):
             page = doc[page_num]
@@ -126,7 +142,7 @@ class PDFParser(DocumentParser):
                 )
 
         doc.close()
-        return blocks, all_spans, total_pages
+        return blocks, all_spans, total_pages, page_dimensions
 
     def _detect_body_font_size(self, spans: List[ParsedSpan]) -> float:
         """Detect the most common (body) font size using mode."""

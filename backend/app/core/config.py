@@ -17,24 +17,24 @@ class Settings(BaseSettings):
     RERANKER_MODEL: str = "BAAI/bge-reranker-v2-m3"
 
     # LLM Configuration
-    LLM_PROVIDER: str = "groq"
-    LLM_MODEL_NAME: str = "llama-3.3-70b-versatile"
+    LLM_PROVIDER: str = "ollama"
+    LLM_MODEL_NAME: str = "qwen2.5:14b"
+    LLM_METADATA_MODEL: str = "qwen2.5:7b"  # Smaller model for metadata extraction during ingestion
     GROQ_API_KEY: str = ""
 
     # Ollama / Self-hosted (optional)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
-    # Retrieval Configuration
+    # Retrieval Configuration (best config from evaluation)
     RETRIEVAL_CANDIDATE_MULTIPLIER: int = 10
     RERANK_CANDIDATES: int = 30
     RERANK_TOP_N: int = 7
     MULTI_QUERY_COUNT: int = 3
 
     # Chunking Configuration
-    # 1800 chars (~450 tokens) optimized for RAG retrieval with LIC documents
-    CHUNK_SIZE: int = 1800
-    CHUNK_OVERLAP: int = 200
-    MAX_TABLE_CHUNK: int = 2500
+    CHUNK_SIZE: int = 800
+    CHUNK_OVERLAP: int = 100
+    MAX_TABLE_CHUNK: int = 2000
 
     class Config:
         env_file = ("../.env", ".env")

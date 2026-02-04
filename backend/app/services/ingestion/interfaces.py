@@ -46,6 +46,8 @@ class ParsedDocument:
     tables: List[ParsedTable] = field(default_factory=list)
     full_text: str = ""
     headings: List[str] = field(default_factory=list)
+    page_dimensions: tuple = ()       # (width, height) of first page in points
+    median_font_size: float = 0.0     # Median font size across all spans
 
 
 @dataclass

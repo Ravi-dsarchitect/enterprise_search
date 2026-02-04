@@ -1,6 +1,8 @@
 import re
+import statistics
 import numpy as np
 from typing import List, Dict, Optional
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -165,11 +167,118 @@ class StructuredChunker(Chunker):
         """Fallback: chunk plain text."""
         return self.fallback_splitter.split_text(text)
 
+    def _is_slide_pdf(self, doc: ParsedDocument) -> bool:
+        """
+        Detect whether a PDF is a slide deck (e.g., PowerPoint export).
+
+        Uses three signals (2 of 3 must match):
+        1. Landscape aspect ratio (width/height >= 1.0)
+        2. Sparse text per page (median chars/page < 500)
+        3. Large median font size (> 16pt)
+        """
+        if doc.total_pages < 3:
+            return False
+
+        signals = 0
+
+        # Signal 1: Landscape aspect ratio
+        if doc.page_dimensions and len(doc.page_dimensions) == 2:
+            width, height = doc.page_dimensions
+            if height > 0 and (width / height) >= 1.0:
+                signals += 1
+
+        # Signal 2: Sparse text per page (median chars/page < 500)
+        if doc.blocks and doc.total_pages > 0:
+            page_char_counts = Counter()
+            for block in doc.blocks:
+                page_char_counts[block.page_number] += len(block.content)
+            all_page_counts = [
+                page_char_counts.get(p, 0) for p in range(1, doc.total_pages + 1)
+            ]
+            if all_page_counts:
+                median_chars = statistics.median(all_page_counts)
+                if median_chars < 500:
+                    signals += 1
+
+        # Signal 3: Large median font size (> 16pt)
+        if doc.median_font_size > 16:
+            signals += 1
+
+        return signals >= 2
+
+    def _chunk_per_page(
+        self, doc: ParsedDocument, doc_metadata: Dict = None
+    ) -> List[StructuredChunk]:
+        """
+        Chunk a slide-type PDF by page: each page becomes one chunk.
+
+        Each slide is kept as a self-contained unit — no splitting within
+        pages and no merging across pages.
+        """
+        doc_metadata = doc_metadata or {}
+        plan_name = doc_metadata.get("plan_name", "")
+        plan_type = doc_metadata.get("plan_type", "")
+
+        # Group blocks by page number
+        page_blocks = defaultdict(list)
+        for block in doc.blocks:
+            page_blocks[block.page_number].append(block)
+
+        # Group tables by page number
+        page_tables = defaultdict(list)
+        for table in doc.tables:
+            page_tables[table.page_number].append(table)
+
+        chunks = []
+        for page_num in range(1, doc.total_pages + 1):
+            parts = []
+
+            for block in page_blocks.get(page_num, []):
+                if block.content.strip():
+                    parts.append(block.content.strip())
+
+            for table in page_tables.get(page_num, []):
+                if table.markdown:
+                    parts.append(table.markdown)
+
+            page_text = "\n".join(parts).strip()
+            if not page_text:
+                continue  # Skip empty slides
+
+            section_type = classify_section(page_text)
+
+            # Use first heading-level block on the page as chunk heading
+            heading = None
+            for block in page_blocks.get(page_num, []):
+                if block.heading_level > 0:
+                    heading = block.content.strip()
+                    break
+
+            chunk = StructuredChunk(
+                text=page_text,
+                section_type=section_type,
+                content_type="text",
+                heading=heading,
+                page_number=page_num,
+                parent_text=page_text[:2000],
+            )
+            chunks.append(chunk)
+
+        # Add contextual prefix (same as heading-based path)
+        for chunk in chunks:
+            prefix = self._build_context_prefix(chunk, plan_name, plan_type)
+            chunk.text = prefix + chunk.text
+
+        return chunks
+
     def chunk_structured(
         self, doc: ParsedDocument, doc_metadata: Dict = None
     ) -> List[StructuredChunk]:
         """
         Chunk a ParsedDocument using structural information.
+
+        Automatically detects slide-type PDFs and uses per-page chunking.
+        For regular documents, uses heading-based section chunking.
 
         Args:
             doc: Parsed document with blocks, tables, and headings.
@@ -178,6 +287,11 @@ class StructuredChunker(Chunker):
         Returns:
             List of StructuredChunk with text, section_type, metadata, parent_text.
         """
+        if self._is_slide_pdf(doc):
+            print(f"  📊 Detected slide-type PDF ({doc.total_pages} pages, "
+                  f"median font {doc.median_font_size:.1f}pt) → per-page chunking")
+            return self._chunk_per_page(doc, doc_metadata)
+
         doc_metadata = doc_metadata or {}
         plan_name = doc_metadata.get("plan_name", "")
         plan_type = doc_metadata.get("plan_type", "")

@@ -527,11 +527,25 @@ class MetadataExtractor:
         self.taxonomy = LICTagTaxonomy()
 
     def _get_llm(self):
-        """Lazy-load the LLM to avoid import issues and unnecessary init."""
+        """Lazy-load the LLM for metadata extraction (uses smaller model)."""
         if self._llm is None:
-            from app.services.rag.generator import LLMFactory
-            generator = LLMFactory.create_generator()
-            self._llm = generator.llm
+            provider = settings.LLM_PROVIDER.lower()
+            model = settings.LLM_METADATA_MODEL or settings.LLM_MODEL_NAME
+
+            if provider == "ollama":
+                from langchain_ollama import ChatOllama
+                self._llm = ChatOllama(
+                    model=model,
+                    temperature=0.1,
+                    base_url=settings.OLLAMA_BASE_URL,
+                )
+            else:
+                # For non-ollama providers, fall back to main LLM
+                from app.services.rag.generator import LLMFactory
+                generator = LLMFactory.create_generator()
+                self._llm = generator.llm
+
+            print(f"  [MetadataExtractor] Using model: {model} ({provider})")
         return self._llm
 
     def extract_metadata(
