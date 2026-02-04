@@ -1,10 +1,15 @@
+import tempfile
+import os
 from typing import List, Dict, Any
 from flashrank import Ranker, RerankRequest
+from app.core.config import settings
+
 
 class Reranker:
-    def __init__(self, model_name: str = "ms-marco-MiniLM-L-12-v2"):
-        # This runs locally on CPU, very fast
-        self.ranker = Ranker(model_name=model_name, cache_dir="/tmp/flashrank")
+    def __init__(self, model_name: str = None):
+        model_name = model_name or settings.RERANKER_MODEL
+        cache_dir = os.path.join(tempfile.gettempdir(), "flashrank")
+        self.ranker = Ranker(model_name=model_name, cache_dir=cache_dir)
 
     def rerank(self, query: str, docs: List[Dict[str, Any]], top_n: int = 5) -> List[Dict[str, Any]]:
         if not docs:

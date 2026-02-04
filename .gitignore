@@ -15,3 +15,6 @@ qdrant_data/
 
 # OS
 .DS_Store
+docs/
+venv/
+.claude/

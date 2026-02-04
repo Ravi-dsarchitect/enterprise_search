@@ -6,6 +6,19 @@ from app.services.rag.query_analyzer import QueryAnalyzer
 from app.services.rag.retriever import Retriever
 from app.core.config import settings
 
+
+# Singleton instance
+_rag_service_instance: "RAGService" = None
+
+
+def get_rag_service() -> "RAGService":
+    """Get or create the singleton RAGService instance."""
+    global _rag_service_instance
+    if _rag_service_instance is None:
+        _rag_service_instance = RAGService()
+    return _rag_service_instance
+
+
 class RAGService:
     def __init__(self):
         self.retriever = Retriever()
@@ -45,23 +58,26 @@ class RAGService:
         # 2. Retrieval Loop
         for q in queries_to_run:
             search_text = q
-            
+            is_hyde_query = False
+
             # HyDE Transformation (Per query)
             if use_hyde:
                 hypo_doc = self.query_transformer.generate_hyde_doc(q)
                 if hypo_doc:
-                    search_text = hypo_doc # Search using the hypothetical document vector
-            
+                    search_text = hypo_doc
+                    is_hyde_query = True
+
             # Retrieve
             retrieval_start = time.time()
             results = await self.retriever.search(
-                search_text, 
+                search_text,
                 limit=limit,
                 use_hybrid=use_hybrid_search,
-                metadata_filters=metadata_filters
+                metadata_filters=metadata_filters,
+                is_hyde=is_hyde_query,
             )
             all_results.extend(results)
-            print(f"⏱️  Retrieval took: {time.time() - retrieval_start:.2f}s")
+            print(f"Retrieval took: {time.time() - retrieval_start:.2f}s")
             
         # 3. Deduplication (by source and text content)
         seen = set()
@@ -129,23 +145,26 @@ class RAGService:
         # 2. Retrieval Loop
         for q in queries_to_run:
             search_text = q
-            
+            is_hyde_query = False
+
             # HyDE Transformation (Per query)
             if use_hyde:
                 hypo_doc = self.query_transformer.generate_hyde_doc(q)
                 if hypo_doc:
                     search_text = hypo_doc
-            
+                    is_hyde_query = True
+
             # Retrieve
             retrieval_start = time.time()
             results = await self.retriever.search(
-                search_text, 
+                search_text,
                 limit=limit,
                 use_hybrid=use_hybrid_search,
-                metadata_filters=metadata_filters
+                metadata_filters=metadata_filters,
+                is_hyde=is_hyde_query,
             )
             all_results.extend(results)
-            print(f"⏱️  Retrieval took: {time.time() - retrieval_start:.2f}s")
+            print(f"Retrieval took: {time.time() - retrieval_start:.2f}s")
             
         # 3. Deduplication
         seen = set()

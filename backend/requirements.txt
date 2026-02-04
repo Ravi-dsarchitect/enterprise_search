@@ -1,3 +1,4 @@
+# Web Framework
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 pydantic>=2.5.0
@@ -8,23 +9,21 @@ python-multipart>=0.0.6
 qdrant-client>=1.7.0
 
 # LLM & Embeddings
-openai>=1.10.0
-g4f
 sentence-transformers>=2.3.0
 langchain>=0.1.0
 langchain-community>=0.0.10
-langchain-openai>=0.0.5
 langchain-groq>=0.1.0
-langchain-aws>=0.1.0  # Added for Bedrock
 
 # Document Parsing
-pypdf>=4.0.0
+PyMuPDF>=1.24.0
+pdfplumber>=0.11.0
 python-docx>=1.1.0
 pandas>=2.2.0
 regex>=2023.12.25
 
+# NER & Entity Extraction
+spacy>=3.7.0
+
 # Advanced RAG
-flashrank>=0.2.0
-fastembed>=0.2.0
 rank-bm25>=0.2.2
 langchain-experimental>=0.0.40

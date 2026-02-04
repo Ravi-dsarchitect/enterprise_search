@@ -1,408 +1,382 @@
-from typing import List, Dict, Tuple, Optional
 import re
-from dataclasses import dataclass
-from app.services.ingestion.interfaces import Chunker, Embedder
+import numpy as np
+from typing import List, Dict, Optional
+from dataclasses import dataclass, field
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_experimental.text_splitter import SemanticChunker as LCSemanticChunker
+
+from app.services.ingestion.interfaces import (
+    Chunker,
+    Embedder,
+    ParsedDocument,
+    ParsedBlock,
+    ParsedTable,
+    StructuredChunk,
+)
+from app.core.config import settings
 
 
 @dataclass
 class EnrichedChunk:
-    """A chunk with layout-aware metadata."""
+    """A chunk enriched with layout and semantic metadata."""
     text: str
-    section_type: str  # Benefits, Eligibility, Premium, etc.
-    content_type: str  # Table, List, Paragraph, Header
+    section_type: str = "general"
+    content_type: str = "Paragraph"  # "Paragraph", "Table", "List", "Heading"
     section_header: Optional[str] = None
     page_number: Optional[int] = None
-    has_financial_data: bool = False
-    has_age_criteria: bool = False
+    metadata: Dict = field(default_factory=dict)
+
+
+# Section classification patterns for LIC insurance documents
+SECTION_PATTERNS = {
+    "eligibility": r"(?i)(eligibility|entry\s*age|age\s*at\s*entry|who\s*can\s*buy|"
+                   r"minimum.*age|maximum.*age|age\s*(?:limit|criteria|condition)|"
+                   r"proposer\s*age|life\s*assured\s*age|underwriting|medical\s*exam)",
+
+    "benefits": r"(?i)(benefits?|death\s*benefit|maturity\s*benefit|survival\s*benefit|"
+                r"bonus|guaranteed\s*addition|loyalty\s*addition|terminal\s*bonus|"
+                r"sum\s*assured\s*(?:on\s*death|on\s*maturity|payable)|"
+                r"risk\s*cover|life\s*cover|money\s*back|income\s*benefit)",
+
+    "premium": r"(?i)(premium|mode\s*of\s*payment|single\s*premium|regular\s*premium|"
+               r"limited\s*pay|tabular\s*premium|premium\s*paying\s*term|ppt|"
+               r"premium\s*rebate|high\s*sum\s*assured\s*rebate|hsa)",
+
+    "sum_assured": r"(?i)(sum\s*assured|basic\s*sum|minimum\s*sum|maximum\s*sum|"
+                   r"cover\s*amount|annualized\s*premium|bsa)",
+
+    "policy_term": r"(?i)(policy\s*term|term\s*of\s*policy|duration|vesting|"
+                   r"deferment\s*period|accumulation\s*period|payout\s*period)",
+
+    "exclusions": r"(?i)(exclusion|not\s*covered|limitation|restriction|"
+                  r"suicide\s*clause|waiting\s*period|section\s*45|"
+                  r"non.?disclosure|mis.?statement)",
+
+    "loan": r"(?i)(loan\s*facility|policy\s*loan|loan\s*against|"
+            r"loan\s*interest|auto.?loan|loan\s*eligibility)",
+
+    "surrender": r"(?i)(surrender|paid.?up|discontinu|lapse|revival|"
+                 r"guaranteed\s*surrender|gsv|special\s*surrender|"
+                 r"free\s*look|cooling.?off|cancellation)",
+
+    "tax": r"(?i)(tax\s*benefit|section\s*80|10\s*\(\s*10\s*d\s*\)|"
+           r"income\s*tax|80c|80ccc|tax\s*deduction|tax\s*free)",
+
+    "rider": r"(?i)(rider|additional\s*benefit|accidental|critical\s*illness|"
+             r"waiver|adb|atpd|ci\s*rider|wop|premium\s*waiver|"
+             r"accident\s*benefit|disability|term\s*assurance\s*rider)",
+
+    "claim": r"(?i)(claim|settlement|nominee|death\s*claim|maturity\s*claim|"
+             r"claim\s*procedure|claim\s*process|documents\s*required|"
+             r"claim\s*intimation|claim\s*settlement\s*ratio)",
+
+    "contact": r"(?i)(contact|customer\s*care|helpline|grievance|ombudsman|"
+               r"complaint|escalation|resolution)",
+
+    "annuity": r"(?i)(annuity|pension|vesting|deferment|immediate\s*annuity|"
+               r"deferred\s*annuity|annuitant|joint\s*life|single\s*life|"
+               r"annuity\s*option|annuity\s*rate|purchase\s*price|corpus|"
+               r"commutation)",
+
+    "fund": r"(?i)(fund|nav|ulip|market\s*linked|unit\s*(?:price|value|allocation)|"
+            r"fund\s*(?:value|option|switch|performance)|equity|debt|balanced)",
+
+    "charges": r"(?i)(charge|deduction|fee|mortality\s*charge|admin\s*charge|"
+               r"allocation\s*charge|fund\s*management|discontinuance\s*charge)",
+}
+
+
+def classify_section(text: str) -> str:
+    """Classify text into a section type using regex patterns."""
+    text_lower = text.lower().strip()
+    if len(text_lower) < 3:
+        return "general"
+
+    for section_type, pattern in SECTION_PATTERNS.items():
+        if re.search(pattern, text_lower):
+            return section_type
+
+    return "general"
+
+
+def split_into_sentences(text: str) -> List[str]:
+    """Split text into sentences, handling abbreviations like Rs., Dr., etc."""
+    # Protect common abbreviations
+    protected = text.replace("Rs.", "Rs\x00").replace("Dr.", "Dr\x00")
+    protected = protected.replace("Mr.", "Mr\x00").replace("Mrs.", "Mrs\x00")
+    protected = protected.replace("No.", "No\x00").replace("Sr.", "Sr\x00")
+    protected = protected.replace("Jr.", "Jr\x00").replace("vs.", "vs\x00")
+    protected = protected.replace("i.e.", "ie\x00").replace("e.g.", "eg\x00")
+    protected = protected.replace("etc.", "etc\x00")
+
+    # Split on sentence boundaries
+    parts = re.split(r'(?<=[.!?])\s+', protected)
+
+    # Restore abbreviations
+    sentences = [p.replace("\x00", ".") for p in parts if p.strip()]
+    return sentences
 
 
 class RecursiveChunker(Chunker):
-    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+    """Simple recursive chunker as fallback for non-PDF documents."""
+
+    def __init__(self, chunk_size: int = 800, chunk_overlap: int = 100):
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
-            separators=["\n\n", "\n", " ", ""]
+            separators=["\n\n", "\n", ". ", " ", ""],
         )
 
     def chunk(self, text: str) -> List[str]:
         return self.splitter.split_text(text)
 
 
-class LayoutAwareChunker(Chunker):
+class StructuredChunker(Chunker):
     """
-    Layout-aware chunker specifically designed for LIC insurance documents.
+    Structure-aware chunker that consumes ParsedDocument from the new parser.
 
-    Optimized based on research (2025 best practices):
-    - Chunk size: 1500-2000 chars for brochures (analytical queries need more context)
-    - Semantic boundaries: Respects section breaks
-    - Table preservation: Keeps tables intact up to 3000 chars
-    - Contextual headers: Prepends section context to each chunk
-    - Small section merging: Combines related small sections
-
-    Features:
-    - Detects section boundaries (Benefits, Eligibility, Premium, etc.)
-    - Keeps tables together
-    - Preserves section context in each chunk
-    - Returns enriched chunks with metadata
+    Strategy:
+    1. Group consecutive blocks by section (using headings as boundaries).
+    2. Keep tables as standalone chunks.
+    3. Split oversized sections at sentence boundaries.
+    4. Prepend document context (plan name, plan type) to every chunk.
+    5. Store parent section text for LLM context.
+    6. Merge undersized chunks with neighbors.
     """
 
-    # Section patterns for LIC insurance documents (comprehensive - from all doc analysis)
-    SECTION_PATTERNS = {
-        # Eligibility & Entry Conditions
-        "eligibility": r"(?i)(eligibility|entry\s*age|age\s*at\s*entry|who\s*can\s*buy|minimum.*age|maximum.*age|"
-                       r"age\s*(?:limit|criteria|condition)|proposer\s*age|life\s*assured\s*age|"
-                       r"policy\s*conditions|underwriting|medical\s*exam|standard\s*lives|"
-                       r"sub.?standard|extra\s*premium|loading|age\s*nearer\s*birthday)",
+    def __init__(
+        self,
+        chunk_size: int = None,
+        chunk_overlap: int = None,
+        max_table_chunk: int = None,
+    ):
+        self.chunk_size = chunk_size or settings.CHUNK_SIZE
+        self.chunk_overlap = chunk_overlap or settings.CHUNK_OVERLAP
+        self.max_table_chunk = max_table_chunk or settings.MAX_TABLE_CHUNK
+        self.min_chunk_size = 200
+        self.max_chunk_size = self.chunk_size * 1.5
 
-        # Benefits - Death, Maturity, Survival, Bonus
-        "benefits": r"(?i)(benefits?|death\s*benefit|maturity\s*benefit|survival\s*benefit|"
-                    r"bonus|guaranteed\s*addition|loyalty\s*addition|terminal\s*bonus|"
-                    r"reversionary\s*bonus|final\s*additional\s*bonus|fab|"
-                    r"sum\s*assured\s*(?:on\s*death|on\s*maturity|payable)|"
-                    r"risk\s*cover|life\s*cover|basic\s*benefit|"
-                    r"money\s*back|survival\s*amount|periodic\s*payment|"
-                    r"income\s*benefit|guaranteed\s*income|flexi\s*income)",
-
-        # Premium Payment Details
-        "premium": r"(?i)(premium|payment|installment|mode\s*of\s*payment|"
-                   r"single\s*premium|regular\s*premium|limited\s*pay|flexible\s*premium|"
-                   r"tabular\s*premium|modal\s*premium|premium\s*paying\s*term|ppt|"
-                   r"yearly|half.?yearly|quarterly|monthly|ecs|nach|"
-                   r"premium\s*rebate|discount|high\s*sum\s*assured\s*rebate|hsa)",
-
-        # Sum Assured
-        "sum_assured": r"(?i)(sum\s*assured|basic\s*sum|minimum\s*sum|maximum\s*sum|cover\s*amount|"
-                       r"annualized\s*premium|annual\s*premium|multiplier|"
-                       r"bsa|basic\s*sa|death\s*sa|maturity\s*sa)",
-
-        # Policy Term & Duration
-        "policy_term": r"(?i)(policy\s*term|term\s*of\s*policy|duration|maturity|vesting|"
-                       r"deferment\s*period|accumulation\s*period|payout\s*period|"
-                       r"benefit\s*term|annuity\s*term|cover\s*period)",
-
-        # Exclusions & Limitations
-        "exclusions": r"(?i)(exclusion|not\s*covered|limitation|restriction|exception|"
-                      r"suicide\s*clause|waiting\s*period|contestability|"
-                      r"section\s*45|non.?disclosure|mis.?statement|fraud|"
-                      r"war|riot|hazardous|aviation|pre.?existing)",
-
-        # Loan Facility
-        "loan": r"(?i)(loan\s*facility|policy\s*loan|loan\s*against|borrowing|"
-                r"loan\s*interest|auto.?loan|alf|loan\s*repayment|"
-                r"loan\s*eligibility|loan\s*amount|outstanding\s*loan)",
-
-        # Surrender & Paid-up
-        "surrender": r"(?i)(surrender|paid.?up|discontinu|lapse|revival|"
-                     r"special\s*surrender|guaranteed\s*surrender|gsv|"
-                     r"special\s*surrender\s*value|ssv|acquired\s*paid.?up|"
-                     r"reduced\s*paid.?up|rpv|reinstatement|revival\s*period|"
-                     r"free\s*look|cooling.?off|cancellation)",
-
-        # Tax Benefits
-        "tax": r"(?i)(tax\s*benefit|section\s*80|10\s*\(\s*10\s*d\s*\)|income\s*tax|gst|exempt|"
-               r"80c|80ccc|80ccd|tax\s*deduction|tax\s*free|"
-                r"annuity\s*tax|pension\s*tax|capital\s*gains)",
-
-        # Riders & Add-ons
-        "rider": r"(?i)(rider|additional\s*benefit|accidental|critical\s*illness|waiver|"
-                 r"adb|atpd|ci\s*rider|wop|premium\s*waiver|"
-                 r"accident\s*benefit|disability|dismemberment|"
-                 r"new\s*term\s*assurance|term\s*assurance\s*rider|"
-                 r"new\s*critical\s*illness|linked\s*ci)",
-
-        # Claim Settlement
-        "claim": r"(?i)(claim|settlement|nominee|assignee|death\s*claim|maturity\s*claim|"
-                 r"survival\s*claim|claim\s*procedure|claim\s*process|"
-                 r"claim\s*form|documents\s*required|claim\s*intimation|"
-                 r"proof\s*of\s*(?:death|age|identity)|"
-                 r"claim\s*settlement\s*ratio|csr|neft|bank\s*details)",
-
-        # Contact & Support
-        "contact": r"(?i)(contact|customer\s*care|helpline|branch|grievance|ombudsman|"
-                   r"lic\s*(?:office|branch|zonal|divisional|central)|"
-                   r"portal|website|app|online\s*services|"
-                   r"customer\s*zone|registered\s*user|"
-                   r"complaint|escalation|resolution)",
-
-        # Annuity & Pension (expanded for pension documents)
-        "annuity": r"(?i)(annuity|pension|vesting|deferment|immediate\s*annuity|deferred\s*annuity|"
-                   r"annuitant|joint\s*life|single\s*life|"
-                   r"annuity\s*option|annuity\s*rate|annuity\s*factor|"
-                   r"purchase\s*price|annuity\s*payable|corpus|"
-                   r"commutation|one.?third\s*commutation|"
-                   r"life\s*annuity|annuity\s*certain|"
-                   r"pension\s*(?:amount|payment|option)|"
-                   r"jeevan\s*(?:akshay|shanti|nidhi|dhara))",
-
-        # Fund & ULIP (expanded for unit-linked documents)
-        "fund": r"(?i)(fund|nav|unit|ulip|market\s*linked|investment|"
-                r"unit\s*(?:price|value|allocation)|"
-                r"fund\s*(?:value|option|switch|performance)|"
-                r"equity|debt|balanced|bond|money\s*market|"
-                r"growth|secure|liquid|"
-                r"asset\s*allocation|portfolio|sfin|"
-                r"fund\s*management\s*charge|fmc|"
-                r"mortality\s*charge|policy\s*admin|"
-                r"premium\s*allocation|settlement\s*fund)",
-
-        # Charges & Deductions (new section for ULIPs and pension)
-        "charges": r"(?i)(charge|deduction|fee|expense|cost|"
-                   r"mortality\s*charge|admin\s*charge|allocation\s*charge|"
-                   r"fund\s*management|switching\s*charge|"
-                   r"discontinuance\s*charge|partial\s*withdrawal|"
-                   r"miscellaneous\s*charge|service\s*tax|gst\s*applicable)",
-
-        # Grace Period & Revival (new section)
-        "grace_revival": r"(?i)(grace\s*period|days\s*(?:of\s*)?grace|revival|reinstatement|"
-                         r"lapsed\s*policy|revival\s*interest|"
-                         r"revival\s*(?:period|scheme|conditions)|"
-                         r"late\s*fee|auto\s*cover|extended\s*term)",
-
-        # Special Features (new section)
-        "special_features": r"(?i)(special\s*feature|unique|advantage|highlight|"
-                           r"settlement\s*option|extended\s*cover|"
-                           r"auto.?cover|paid.?up\s*addition|"
-                           r"guaranteed\s*insurability|gi\s*benefit|"
-                           r"top.?up|partial\s*withdrawal)",
-    }
-
-    # Table detection patterns
-    TABLE_INDICATORS = [
-        r"\|\s*.*\s*\|",  # Markdown-style tables
-        r"\t.*\t",  # Tab-separated
-        r"\s{3,}\d+\s{3,}",  # Multiple spaces with numbers (typical in PDF tables)
-        r"^\s*\d+\s+\d+\s+\d+",  # Rows of numbers
-        r"(?:Rs\.?|₹)\s*[\d,]+(?:\.\d+)?",  # Currency amounts
-    ]
-
-    # Optimal chunk sizes based on research (in characters)
-    # - Factoid queries: 800-1000 chars
-    # - Analytical queries: 1600-2000 chars
-    # - Tables: up to 3000 chars to keep integrity
-    DEFAULT_CHUNK_SIZE = 1800  # ~450 tokens - good for mixed queries
-    MIN_CHUNK_SIZE = 800  # Increased from 400 - aggressively merge small chunks
-    MAX_TABLE_CHUNK = 3000  # Allow larger chunks for tables
-    OVERLAP_RATIO = 0.15  # 15% overlap
-    MIN_SECTION_CONTENT = 500  # Minimum chars before allowing section split
-
-    def __init__(self, chunk_size: int = 1800, chunk_overlap: int = 270):
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.recursive_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=["\n\n", "\n", ". ", " ", ""]
+        self.fallback_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            separators=["\n\n", "\n", ". ", " ", ""],
         )
 
     def chunk(self, text: str) -> List[str]:
+        """Fallback: chunk plain text."""
+        return self.fallback_splitter.split_text(text)
+
+    def chunk_structured(
+        self, doc: ParsedDocument, doc_metadata: Dict = None
+    ) -> List[StructuredChunk]:
         """
-        Main chunking method that returns plain text chunks.
-        For enriched chunks with metadata, use chunk_with_metadata().
+        Chunk a ParsedDocument using structural information.
+
+        Args:
+            doc: Parsed document with blocks, tables, and headings.
+            doc_metadata: Document-level metadata (plan_name, plan_type, etc.)
+
+        Returns:
+            List of StructuredChunk with text, section_type, metadata, parent_text.
         """
-        enriched = self.chunk_with_metadata(text)
-        return [c.text for c in enriched]
+        doc_metadata = doc_metadata or {}
+        plan_name = doc_metadata.get("plan_name", "")
+        plan_type = doc_metadata.get("plan_type", "")
 
-    def chunk_with_metadata(self, text: str) -> List[EnrichedChunk]:
-        """
-        Chunk text with layout awareness and return enriched chunks.
+        # Step 1: Group blocks into sections based on headings
+        sections = self._group_blocks_into_sections(doc.blocks)
 
-        Strategy:
-        1. Parse page markers and sections
-        2. Split by section boundaries
-        3. Keep tables together
-        4. Apply size limits while preserving context
-        """
-        # Step 1: Extract page numbers and clean text
-        pages = self._parse_pages(text)
+        # Step 2: Create chunks from sections
+        raw_chunks = []
 
-        # Step 2: Detect sections within each page
-        sections = self._detect_sections(pages)
+        for section in sections:
+            section_type = section["section_type"]
+            heading = section["heading"]
+            section_text = section["text"]
+            page_number = section["page_number"]
 
-        # Step 3: Create chunks respecting section boundaries
-        chunks = self._create_section_aware_chunks(sections)
+            # Build parent text (full section, capped at 2000 chars)
+            parent_text = section_text[:2000]
 
-        # Step 4: Enrich chunks with metadata
-        enriched_chunks = self._enrich_chunks(chunks)
-
-        return enriched_chunks
-
-    def _parse_pages(self, text: str) -> List[Tuple[int, str]]:
-        """Extract page numbers and content."""
-        pages = []
-
-        # Match page markers like "## Page 1" or "Page 1" or "--- Page 1 ---"
-        page_pattern = r"(?:##\s*)?[Pp]age\s*(\d+)"
-        parts = re.split(page_pattern, text)
-
-        if len(parts) == 1:
-            # No page markers found, treat as single page
-            return [(1, text)]
-
-        # parts: [pre-content, page_num1, content1, page_num2, content2, ...]
-        for i in range(1, len(parts), 2):
-            page_num = int(parts[i])
-            content = parts[i + 1] if i + 1 < len(parts) else ""
-            if content.strip():
-                pages.append((page_num, content))
-
-        return pages if pages else [(1, text)]
-
-    def _detect_sections(self, pages: List[Tuple[int, str]]) -> List[Dict]:
-        """Detect section boundaries within the document.
-
-        Uses MIN_SECTION_CONTENT to avoid splitting too frequently.
-        Only creates new section if:
-        1. New section type detected AND
-        2. Current block has accumulated enough content (MIN_SECTION_CONTENT)
-        """
-        sections = []
-        current_section = "general"
-        current_header = None
-        chars_since_last_split = 0
-
-        for page_num, content in pages:
-            lines = content.split('\n')
-            current_block = []
-
-            for line in lines:
-                line_len = len(line)
-
-                # Check if this line is a section header
-                detected_section = self._classify_section(line)
-
-                # Check if this looks like a header (short, possibly bold/caps)
-                is_header = self._is_header_line(line)
-
-                # Only split if:
-                # 1. Different section type detected
-                # 2. We have accumulated enough content since last split
-                # 3. The line looks like a header (strong indicator)
-                should_split = (
-                    detected_section and
-                    detected_section != current_section and
-                    (chars_since_last_split >= self.MIN_SECTION_CONTENT or is_header)
+            if len(section_text) <= self.max_chunk_size:
+                # Section fits in one chunk
+                raw_chunks.append(
+                    StructuredChunk(
+                        text=section_text,
+                        section_type=section_type,
+                        content_type="text",
+                        heading=heading,
+                        page_number=page_number,
+                        parent_text=parent_text,
+                    )
                 )
+            else:
+                # Split large section at sentence boundaries
+                sub_chunks = self._split_section(
+                    section_text, section_type, heading, page_number, parent_text
+                )
+                raw_chunks.extend(sub_chunks)
 
-                if should_split:
-                    # Save current block
-                    if current_block:
+        # Step 3: Create table chunks
+        for table in doc.tables:
+            table_chunk = self._create_table_chunk(table, doc_metadata)
+            raw_chunks.append(table_chunk)
+
+        # Step 4: Merge undersized chunks
+        merged_chunks = self._merge_small_chunks(raw_chunks)
+
+        # Step 5: Add contextual prefix to every chunk
+        for chunk in merged_chunks:
+            prefix = self._build_context_prefix(chunk, plan_name, plan_type)
+            chunk.text = prefix + chunk.text
+
+        return merged_chunks
+
+    def _group_blocks_into_sections(
+        self, blocks: List[ParsedBlock]
+    ) -> List[Dict]:
+        """Group consecutive blocks into sections using headings as boundaries."""
+        if not blocks:
+            return []
+
+        sections = []
+        current_heading = None
+        current_section_type = "general"
+        current_blocks = []
+        current_page = 1
+
+        for block in blocks:
+            if block.heading_level > 0:
+                # This is a heading - start a new section
+                if current_blocks:
+                    section_text = "\n".join(b.content for b in current_blocks).strip()
+                    if section_text:
                         sections.append({
-                            "page": page_num,
-                            "section_type": current_section,
-                            "header": current_header,
-                            "content": '\n'.join(current_block)
+                            "heading": current_heading,
+                            "section_type": current_section_type,
+                            "text": section_text,
+                            "page_number": current_page,
                         })
 
-                    current_section = detected_section
-                    current_header = line.strip() if is_header else None
-                    current_block = [line] if not is_header else []
-                    chars_since_last_split = 0
-                else:
-                    current_block.append(line)
-                    chars_since_last_split += line_len
+                current_heading = block.content.strip()
+                current_section_type = classify_section(current_heading)
+                current_blocks = []
+                current_page = block.page_number
+            else:
+                if not current_blocks:
+                    current_page = block.page_number
+                current_blocks.append(block)
 
-            # Save remaining block for this page
-            if current_block:
+        # Don't forget the last section
+        if current_blocks:
+            section_text = "\n".join(b.content for b in current_blocks).strip()
+            if section_text:
                 sections.append({
-                    "page": page_num,
-                    "section_type": current_section,
-                    "header": current_header,
-                    "content": '\n'.join(current_block)
+                    "heading": current_heading,
+                    "section_type": current_section_type,
+                    "text": section_text,
+                    "page_number": current_page,
                 })
 
         return sections
 
-    def _classify_section(self, line: str) -> Optional[str]:
-        """Classify a line into a section type."""
-        line_lower = line.lower().strip()
+    def _split_section(
+        self,
+        text: str,
+        section_type: str,
+        heading: Optional[str],
+        page_number: int,
+        parent_text: str,
+    ) -> List[StructuredChunk]:
+        """Split a large section into chunks at sentence boundaries with overlap."""
+        sentences = split_into_sentences(text)
+        chunks = []
+        current_chunk_sentences = []
+        current_size = 0
 
-        # Skip empty or very short lines
-        if len(line_lower) < 3:
-            return None
+        for sentence in sentences:
+            sentence_len = len(sentence)
 
-        for section_type, pattern in self.SECTION_PATTERNS.items():
-            if re.search(pattern, line_lower):
-                return section_type
+            if current_size + sentence_len > self.chunk_size and current_chunk_sentences:
+                # Save current chunk
+                chunk_text = " ".join(current_chunk_sentences)
+                chunks.append(
+                    StructuredChunk(
+                        text=chunk_text,
+                        section_type=section_type,
+                        content_type="text",
+                        heading=heading,
+                        page_number=page_number,
+                        parent_text=parent_text,
+                    )
+                )
 
-        return None
+                # Overlap: keep last 1-2 sentences
+                overlap_sentences = current_chunk_sentences[-2:]
+                current_chunk_sentences = overlap_sentences
+                current_size = sum(len(s) for s in current_chunk_sentences)
 
-    def _is_header_line(self, line: str) -> bool:
-        """Check if a line looks like a section header."""
-        line = line.strip()
+            current_chunk_sentences.append(sentence)
+            current_size += sentence_len
 
-        if not line or len(line) > 100:
-            return False
+        # Save remaining
+        if current_chunk_sentences:
+            chunk_text = " ".join(current_chunk_sentences)
+            chunks.append(
+                StructuredChunk(
+                    text=chunk_text,
+                    section_type=section_type,
+                    content_type="text",
+                    heading=heading,
+                    page_number=page_number,
+                    parent_text=parent_text,
+                )
+            )
 
-        # Markdown headers
-        if line.startswith('#'):
-            return True
+        return chunks
 
-        # All caps or title case, relatively short
-        if len(line) < 60 and (line.isupper() or line.istitle()):
-            return True
+    def _create_table_chunk(
+        self, table: ParsedTable, doc_metadata: Dict
+    ) -> StructuredChunk:
+        """Create a chunk from a parsed table."""
+        text = table.markdown or "\n".join(
+            " | ".join(row) for row in table.rows
+        )
 
-        # Ends with colon
-        if line.endswith(':') and len(line) < 50:
-            return True
+        # If table is too large, truncate rows but keep header
+        if len(text) > self.max_table_chunk and table.rows:
+            header = table.rows[0]
+            header_line = "| " + " | ".join(header) + " |"
+            separator = "| " + " | ".join(["---"] * len(header)) + " |"
+            truncated_lines = [header_line, separator]
+            current_size = len(header_line) + len(separator)
 
-        # Common header patterns
-        header_patterns = [
-            r"^\d+\.\s+[A-Z]",  # Numbered section "1. Benefits"
-            r"^[A-Z][A-Z\s]+:?$",  # ALL CAPS
-            r"^[A-Za-z\s]+:$",  # "Benefits:"
-        ]
+            for row in table.rows[1:]:
+                row_line = "| " + " | ".join(row) + " |"
+                if current_size + len(row_line) > self.max_table_chunk:
+                    truncated_lines.append("| ... (table truncated) |")
+                    break
+                truncated_lines.append(row_line)
+                current_size += len(row_line)
 
-        for pattern in header_patterns:
-            if re.match(pattern, line):
-                return True
+            text = "\n".join(truncated_lines)
 
-        return False
+        caption = table.caption or ""
+        if caption:
+            text = f"{caption}\n{text}"
 
-    def _create_section_aware_chunks(self, sections: List[Dict]) -> List[Dict]:
-        """Create chunks while respecting section boundaries and merging small sections."""
-        # Step 1: Create initial chunks
-        initial_chunks = []
+        return StructuredChunk(
+            text=text,
+            section_type="general",
+            content_type="table",
+            heading=caption or None,
+            page_number=table.page_number,
+            parent_text=text[:2000],
+        )
 
-        for section in sections:
-            content = section["content"]
-
-            # Detect if this section contains a table
-            is_table = self._is_table_content(content)
-
-            if is_table:
-                # Keep tables together if possible, or split carefully
-                # Use larger size limit for tables
-                table_chunks = self._chunk_table(content, section)
-                initial_chunks.extend(table_chunks)
-            elif len(content) > self.chunk_size * 1.5:
-                # Section too large, need to split
-                sub_chunks = self._split_large_section(content, section)
-                initial_chunks.extend(sub_chunks)
-            elif len(content.strip()) > 30:
-                # Section is appropriately sized
-                initial_chunks.append({
-                    **section,
-                    "content_type": self._detect_content_type(content)
-                })
-
-        # Step 2: Merge small consecutive chunks of same section type
-        merged_chunks = self._merge_small_chunks(initial_chunks)
-
-        # Step 3: Add contextual headers for better retrieval
-        contextualized_chunks = self._add_contextual_headers(merged_chunks)
-
-        return contextualized_chunks
-
-    def _merge_small_chunks(self, chunks: List[Dict]) -> List[Dict]:
-        """Aggressively merge small consecutive chunks to reach target size.
-
-        Strategy:
-        - Always merge same section type regardless of size (up to chunk_size)
-        - Merge different section types if current chunk is very small (<MIN_CHUNK_SIZE)
-        - Prefer keeping similar content types together (tables with tables)
-        """
+    def _merge_small_chunks(
+        self, chunks: List[StructuredChunk]
+    ) -> List[StructuredChunk]:
+        """Merge consecutive chunks that are too small."""
         if not chunks:
             return chunks
 
@@ -410,375 +384,533 @@ class LayoutAwareChunker(Chunker):
         current = None
 
         for chunk in chunks:
-            content_len = len(chunk.get("content", ""))
-            current_len = len(current.get("content", "")) if current else 0
-            combined_len = current_len + content_len
-
             if current is None:
-                current = chunk.copy()
+                current = chunk
                 continue
 
-            # Same section type: merge if under chunk_size limit
-            same_section = chunk.get("section_type") == current.get("section_type")
-            same_content_type = chunk.get("content_type") == current.get("content_type")
+            current_len = len(current.text)
+            chunk_len = len(chunk.text)
+            combined_len = current_len + chunk_len
 
-            # Decision logic for merging
-            should_merge = False
+            # Merge if current is too small and combined fits
+            should_merge = (
+                current_len < self.min_chunk_size
+                and combined_len < self.max_chunk_size
+                and chunk.content_type == current.content_type
+            )
 
-            if combined_len < self.chunk_size:
-                if same_section:
-                    # Always merge same section (primary rule)
-                    should_merge = True
-                elif current_len < self.MIN_CHUNK_SIZE:
-                    # Current chunk too small - merge even with different section
-                    should_merge = True
-                elif content_len < self.MIN_CHUNK_SIZE and same_content_type:
-                    # Next chunk very small and same content type - absorb it
-                    should_merge = True
+            # Also merge same section type if combined fits
+            if (
+                not should_merge
+                and chunk.section_type == current.section_type
+                and combined_len < self.chunk_size
+            ):
+                should_merge = True
 
             if should_merge:
-                # Merge with current
-                current["content"] = current["content"] + "\n\n" + chunk["content"]
-                # Keep the first header if present, or update if new one is better
-                if not current.get("header") and chunk.get("header"):
-                    current["header"] = chunk["header"]
-                # Keep section type of the larger portion
-                if content_len > current_len:
-                    current["section_type"] = chunk.get("section_type")
+                current.text = current.text + "\n\n" + chunk.text
+                if not current.heading and chunk.heading:
+                    current.heading = chunk.heading
             else:
-                # Save current and start new
                 merged.append(current)
-                current = chunk.copy()
+                current = chunk
 
-        # Don't forget the last chunk
         if current is not None:
             merged.append(current)
 
         return merged
 
-    def _add_contextual_headers(self, chunks: List[Dict]) -> List[Dict]:
-        """Add compact contextual headers to chunks for better retrieval.
+    def _build_context_prefix(
+        self, chunk: StructuredChunk, plan_name: str, plan_type: str
+    ) -> str:
+        """Build contextual prefix for a chunk to improve retrieval."""
+        parts = []
+        if plan_name:
+            parts.append(f"Plan: {plan_name}")
+        if plan_type:
+            parts.append(f"Type: {plan_type}")
+        if chunk.section_type != "general":
+            section_display = chunk.section_type.replace("_", " ").title()
+            parts.append(f"Section: {section_display}")
+        if chunk.page_number:
+            parts.append(f"P{chunk.page_number}")
 
-        Research shows that prepending context improves retrieval accuracy.
-        Using shorter format to save space: [Benefits|P3] instead of verbose format
-        """
-        contextualized = []
-
-        for chunk in chunks:
-            content = chunk.get("content", "")
-            section_type = chunk.get("section_type", "general")
-            page = chunk.get("page")
-
-            # Build compact context prefix
-            section_short = section_type.replace("_", " ").title()
-
-            # Compact format: [Benefits|P3]
-            if page:
-                context_line = f"[{section_short}|P{page}] "
-            else:
-                context_line = f"[{section_short}] "
-
-            chunk["content"] = context_line + content
-
-            contextualized.append(chunk)
-
-        return contextualized
-
-    def _is_table_content(self, content: str) -> bool:
-        """Detect if content contains table data."""
-        for pattern in self.TABLE_INDICATORS:
-            if re.search(pattern, content):
-                # Additional check: multiple rows with similar structure
-                lines = content.strip().split('\n')
-                if len(lines) >= 3:
-                    return True
-
-        # Check for aligned columns (common in PDF table extraction)
-        lines = content.strip().split('\n')
-        if len(lines) >= 3:
-            # Count lines with multiple space-separated values
-            tabular_lines = sum(1 for line in lines if len(re.findall(r'\s{2,}', line)) >= 2)
-            if tabular_lines >= len(lines) * 0.5:
-                return True
-
-        return False
-
-    def _chunk_table(self, content: str, section: Dict) -> List[Dict]:
-        """Chunk table content while keeping rows together.
-
-        Tables use larger chunk size (MAX_TABLE_CHUNK) to preserve integrity.
-        Research shows tables should stay together when possible.
-        """
-        chunks = []
-        lines = content.split('\n')
-
-        # Find table header (first non-empty line with structure)
-        header_line = None
-        for i, line in enumerate(lines):
-            if re.search(r'\s{2,}', line) or '\t' in line:
-                header_line = line
-                break
-
-        current_chunk_lines = []
-        current_size = 0
-
-        # Use larger size limit for tables
-        table_chunk_size = self.MAX_TABLE_CHUNK
-
-        for line in lines:
-            line_size = len(line) + 1  # +1 for newline
-
-            # If adding this line would exceed limit, save current chunk
-            if current_size + line_size > table_chunk_size and current_chunk_lines:
-                chunk_content = '\n'.join(current_chunk_lines)
-                chunks.append({
-                    **section,
-                    "content": chunk_content,
-                    "content_type": "Table"
-                })
-
-                # Start new chunk with header for context
-                if header_line and header_line not in current_chunk_lines[:2]:
-                    current_chunk_lines = [f"(Continued from {section.get('header', 'table')})", header_line]
-                    current_size = len(header_line) + 50
-                else:
-                    current_chunk_lines = []
-                    current_size = 0
-
-            current_chunk_lines.append(line)
-            current_size += line_size
-
-        # Save remaining content
-        if current_chunk_lines:
-            chunks.append({
-                **section,
-                "content": '\n'.join(current_chunk_lines),
-                "content_type": "Table"
-            })
-
-        return chunks
-
-    def _split_large_section(self, content: str, section: Dict) -> List[Dict]:
-        """Split a large section while preserving context."""
-        chunks = []
-
-        # Use recursive splitter for text content
-        text_chunks = self.recursive_splitter.split_text(content)
-
-        for i, chunk_text in enumerate(text_chunks):
-            # Add section context to non-first chunks
-            if i > 0 and section.get("header"):
-                context_prefix = f"(Continued: {section['header']})\n"
-                chunk_text = context_prefix + chunk_text
-
-            chunks.append({
-                **section,
-                "content": chunk_text,
-                "content_type": self._detect_content_type(chunk_text)
-            })
-
-        return chunks
-
-    def _detect_content_type(self, content: str) -> str:
-        """Detect the type of content in a chunk."""
-        content_stripped = content.strip()
-
-        # Check for table
-        if self._is_table_content(content):
-            return "Table"
-
-        # Check for list
-        list_patterns = [
-            r"^\s*[-•*]\s",  # Bullet points
-            r"^\s*\d+[\.\)]\s",  # Numbered list
-            r"^\s*[a-z][\.\)]\s",  # Lettered list
-            r"^\s*[ivxIVX]+[\.\)]\s",  # Roman numerals
-        ]
-
-        lines = content_stripped.split('\n')
-        list_lines = sum(1 for line in lines if any(re.match(p, line) for p in list_patterns))
-
-        if list_lines >= len(lines) * 0.3 and list_lines >= 2:
-            return "List"
-
-        return "Paragraph"
-
-    def _enrich_chunks(self, chunks: List[Dict]) -> List[EnrichedChunk]:
-        """Add additional metadata to chunks."""
-        enriched = []
-
-        for chunk in chunks:
-            content = chunk.get("content", "")
-
-            # Financial data detection
-            has_financial = bool(re.search(r"(?:Rs\.?|₹)\s*[\d,]+|premium|sum\s*assured", content, re.I))
-
-            # Age criteria detection
-            has_age = bool(re.search(r"\d+\s*(?:years?|yrs?)|age\s*(?:at|of)|entry\s*age|maturity\s*age", content, re.I))
-
-            enriched.append(EnrichedChunk(
-                text=content,
-                section_type=chunk.get("section_type", "general"),
-                content_type=chunk.get("content_type", "Paragraph"),
-                section_header=chunk.get("header"),
-                page_number=chunk.get("page"),
-                has_financial_data=has_financial,
-                has_age_criteria=has_age
-            ))
-
-        return enriched
+        if parts:
+            return "[" + " | ".join(parts) + "] "
+        return ""
 
 
 class SemanticChunker(Chunker):
-    def __init__(self, embedder: Embedder):
-        # We need to ensure the embedder is compatible with LangChain
-        # If it's our OpenAIEmbedder, it has a .client which is a LangChain object
-        if hasattr(embedder, 'client') and hasattr(embedder.client, 'embed_documents'):
-            self.embeddings = embedder.client
-        else:
-            # Duck typing: our Embedder interface matches LangChain's
-            self.embeddings = embedder
+    """
+    Semantic chunker that uses embedding similarity to find natural breakpoints.
 
-        self.splitter = LCSemanticChunker(
-            embeddings=self.embeddings,
-            breakpoint_threshold_type="percentile",
-            # Increased to 95 (default) to catch FEWER breakpoints.
-            # This helps keep "Header" + "Content" together instead of splitting them.
-            breakpoint_threshold_amount=95
+    Strategy:
+    1. Split text into sentences.
+    2. Create sentence groups (windows) and embed them.
+    3. Compute cosine similarity between consecutive groups.
+    4. Split where similarity drops below a threshold (breakpoints).
+    5. Merge resulting segments into chunks respecting size limits.
+    """
+
+    def __init__(
+        self,
+        embedder: "Embedder" = None,
+        chunk_size: int = None,
+        similarity_threshold: float = 0.5,
+        window_size: int = 3,
+    ):
+        self.embedder = embedder
+        self.chunk_size = chunk_size or settings.CHUNK_SIZE
+        self.similarity_threshold = similarity_threshold
+        self.window_size = window_size
+        self.fallback_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=settings.CHUNK_OVERLAP,
+            separators=["\n\n", "\n", ". ", " ", ""],
         )
 
     def chunk(self, text: str) -> List[str]:
-        """
-        Hybrid Chunking:
-        1. Semantic Search (Primary): Find topic breaks.
-        2. Recursive Fallback (Secondary): Force split chunks > 2000 chars.
-        """
-        try:
-            # 1. Primary Pass: Semantic Split
-            docs = self.splitter.create_documents([text])
-            initial_chunks = [d.page_content for d in docs]
+        """Split text into semantically coherent chunks."""
+        if not text or not text.strip():
+            return []
 
-            final_chunks = []
-            recursive_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1500, # Target size for fallback
-                chunk_overlap=200,
-                separators=["\n\n", "\n", ".", " ", ""]
+        sentences = split_into_sentences(text)
+        if len(sentences) <= 1:
+            return [text.strip()] if text.strip() else []
+
+        # If no embedder or too few sentences, fall back to recursive splitting
+        if self.embedder is None or len(sentences) < self.window_size + 1:
+            return self.fallback_splitter.split_text(text)
+
+        # Create sentence windows for smoother embeddings
+        windows = self._create_windows(sentences)
+
+        # Embed all windows
+        try:
+            embeddings = self.embedder.embed_documents(windows)
+        except Exception:
+            return self.fallback_splitter.split_text(text)
+
+        # Find breakpoints using cosine similarity drops
+        breakpoints = self._find_breakpoints(embeddings)
+
+        # Build chunks from sentence groups
+        chunks = self._build_chunks_from_breakpoints(sentences, breakpoints)
+        return chunks
+
+    def _create_windows(self, sentences: List[str]) -> List[str]:
+        """Create overlapping windows of sentences for smoother embedding."""
+        windows = []
+        for i in range(len(sentences)):
+            start = max(0, i - self.window_size // 2)
+            end = min(len(sentences), i + self.window_size // 2 + 1)
+            window_text = " ".join(sentences[start:end])
+            windows.append(window_text)
+        return windows
+
+    def _find_breakpoints(self, embeddings: List[List[float]]) -> List[int]:
+        """Find indices where semantic similarity drops, indicating topic shifts."""
+        if len(embeddings) < 2:
+            return []
+
+        emb_array = np.array(embeddings)
+        similarities = []
+        for i in range(len(emb_array) - 1):
+            a, b = emb_array[i], emb_array[i + 1]
+            norm_a, norm_b = np.linalg.norm(a), np.linalg.norm(b)
+            if norm_a == 0 or norm_b == 0:
+                similarities.append(0.0)
+            else:
+                similarities.append(float(np.dot(a, b) / (norm_a * norm_b)))
+
+        # Breakpoints where similarity is below threshold
+        breakpoints = []
+        for i, sim in enumerate(similarities):
+            if sim < self.similarity_threshold:
+                breakpoints.append(i + 1)  # split after sentence i
+
+        return breakpoints
+
+    def _build_chunks_from_breakpoints(
+        self, sentences: List[str], breakpoints: List[int]
+    ) -> List[str]:
+        """Build chunks by grouping sentences between breakpoints, respecting size limits."""
+        if not breakpoints:
+            # No breakpoints found - use fallback
+            full_text = " ".join(sentences)
+            if len(full_text) <= self.chunk_size * 1.5:
+                return [full_text]
+            return self.fallback_splitter.split_text(full_text)
+
+        chunks = []
+        prev = 0
+        for bp in breakpoints:
+            segment = " ".join(sentences[prev:bp]).strip()
+            if segment:
+                # Split oversized segments
+                if len(segment) > self.chunk_size * 1.5:
+                    chunks.extend(self.fallback_splitter.split_text(segment))
+                else:
+                    chunks.append(segment)
+            prev = bp
+
+        # Last segment
+        segment = " ".join(sentences[prev:]).strip()
+        if segment:
+            if len(segment) > self.chunk_size * 1.5:
+                chunks.extend(self.fallback_splitter.split_text(segment))
+            else:
+                chunks.append(segment)
+
+        # Merge tiny chunks with neighbors
+        merged = self._merge_tiny_chunks(chunks)
+        return merged
+
+    def _merge_tiny_chunks(self, chunks: List[str], min_size: int = 150) -> List[str]:
+        """Merge chunks that are too small with their neighbors."""
+        if not chunks:
+            return chunks
+
+        merged = []
+        buffer = ""
+
+        for chunk in chunks:
+            if buffer:
+                combined = buffer + " " + chunk
+                if len(combined) <= self.chunk_size * 1.5:
+                    buffer = combined
+                else:
+                    merged.append(buffer)
+                    buffer = chunk
+            else:
+                buffer = chunk
+
+            if len(buffer) >= min_size:
+                merged.append(buffer)
+                buffer = ""
+
+        if buffer:
+            if merged and len(merged[-1]) + len(buffer) < self.chunk_size * 1.5:
+                merged[-1] = merged[-1] + " " + buffer
+            else:
+                merged.append(buffer)
+
+        return merged
+
+
+class LayoutAwareChunker(Chunker):
+    """
+    Layout-aware chunker that detects document structure from plain text.
+
+    Detects headings, bullet lists, tables, and paragraph boundaries,
+    then chunks at these layout boundaries. Each chunk is classified by
+    section type and content type.
+    """
+
+    # Patterns for detecting structural elements in plain text
+    HEADING_PATTERN = re.compile(
+        r"^(?:"
+        r"[A-Z][A-Z\s\d\-&/]{4,80}$|"               # ALL CAPS lines (headings)
+        r"\d+\.\s+[A-Z][A-Za-z\s]{3,80}$|"            # "1. Section Title"
+        r"[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}\s*:$|"   # "Title Case Heading:"
+        r"#{1,4}\s+.+"                                  # Markdown headings
+        r")",
+        re.MULTILINE,
+    )
+    LIST_PATTERN = re.compile(r"^\s*(?:[-•*]|\d+[.)]\s|[a-z][.)]\s|[ivx]+[.)]\s)", re.MULTILINE)
+    TABLE_PATTERN = re.compile(r"(?:.*\|.*\|)|(?:.*\t.*\t)")
+
+    def __init__(self, chunk_size: int = None, chunk_overlap: int = None):
+        self.chunk_size = chunk_size or settings.CHUNK_SIZE
+        self.chunk_overlap = chunk_overlap or settings.CHUNK_OVERLAP
+        self.min_chunk_size = 150
+        self.fallback_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            separators=["\n\n", "\n", ". ", " ", ""],
+        )
+
+    def chunk(self, text: str) -> List[str]:
+        """Split text into layout-aware chunks."""
+        if not text or not text.strip():
+            return []
+
+        blocks = self._detect_blocks(text)
+        if not blocks:
+            return self.fallback_splitter.split_text(text)
+
+        chunks = self._blocks_to_chunks(blocks)
+        return [c.text for c in chunks]
+
+    def chunk_with_metadata(self, text: str) -> List[EnrichedChunk]:
+        """Split text into layout-aware chunks with metadata."""
+        if not text or not text.strip():
+            return []
+
+        blocks = self._detect_blocks(text)
+        if not blocks:
+            # Fallback: wrap plain chunks in EnrichedChunk
+            plain_chunks = self.fallback_splitter.split_text(text)
+            return [
+                EnrichedChunk(text=c, section_type="general", content_type="Paragraph")
+                for c in plain_chunks
+            ]
+
+        return self._blocks_to_chunks(blocks)
+
+    def _detect_blocks(self, text: str) -> List[Dict]:
+        """
+        Parse raw text into structural blocks.
+        Returns list of dicts with keys: text, block_type, heading, page_number.
+        """
+        lines = text.split("\n")
+        blocks = []
+        current_block = {"lines": [], "block_type": "paragraph", "heading": None}
+        current_heading = None
+        estimated_page = 1
+
+        for line in lines:
+            stripped = line.strip()
+
+            # Page break detection (common in PDFs converted to text)
+            if stripped.startswith("\f") or re.match(r"^-+\s*Page\s*\d+\s*-+$", stripped, re.IGNORECASE):
+                estimated_page += 1
+                if stripped.startswith("\f"):
+                    stripped = stripped[1:].strip()
+                    if not stripped:
+                        continue
+
+            # Empty line = potential block boundary
+            if not stripped:
+                if current_block["lines"]:
+                    current_block["page_number"] = estimated_page
+                    blocks.append(current_block)
+                    current_block = {"lines": [], "block_type": "paragraph", "heading": current_heading}
+                continue
+
+            # Detect headings
+            if self._is_heading(stripped):
+                # Save previous block
+                if current_block["lines"]:
+                    current_block["page_number"] = estimated_page
+                    blocks.append(current_block)
+
+                current_heading = stripped.lstrip("#*- ").rstrip(":").strip()
+                blocks.append({
+                    "lines": [stripped],
+                    "block_type": "heading",
+                    "heading": current_heading,
+                    "page_number": estimated_page,
+                })
+                current_block = {"lines": [], "block_type": "paragraph", "heading": current_heading}
+                continue
+
+            # Detect tables (pipe-separated or tab-separated)
+            if self.TABLE_PATTERN.match(stripped):
+                if current_block["lines"] and current_block["block_type"] != "table":
+                    current_block["page_number"] = estimated_page
+                    blocks.append(current_block)
+                    current_block = {"lines": [], "block_type": "table", "heading": current_heading}
+                current_block["block_type"] = "table"
+                current_block["lines"].append(line)
+                continue
+
+            # Detect lists
+            if self.LIST_PATTERN.match(stripped):
+                if current_block["lines"] and current_block["block_type"] not in ("list", "paragraph"):
+                    current_block["page_number"] = estimated_page
+                    blocks.append(current_block)
+                    current_block = {"lines": [], "block_type": "list", "heading": current_heading}
+                if not current_block["lines"]:
+                    current_block["block_type"] = "list"
+                current_block["lines"].append(line)
+                continue
+
+            # Regular paragraph text
+            if current_block["block_type"] == "table":
+                # End of table, start new paragraph
+                current_block["page_number"] = estimated_page
+                blocks.append(current_block)
+                current_block = {"lines": [], "block_type": "paragraph", "heading": current_heading}
+
+            current_block["lines"].append(line)
+
+        # Don't forget the last block
+        if current_block["lines"]:
+            current_block["page_number"] = estimated_page
+            blocks.append(current_block)
+
+        return blocks
+
+    def _is_heading(self, line: str) -> bool:
+        """Heuristic heading detection."""
+        stripped = line.strip()
+        if not stripped or len(stripped) > 120:
+            return False
+        if len(stripped) < 3:
+            return False
+
+        # Markdown heading
+        if re.match(r"^#{1,4}\s+", stripped):
+            return True
+        # ALL CAPS line (common in LIC PDFs)
+        if stripped.isupper() and len(stripped) > 4 and not stripped.startswith("|"):
+            return True
+        # Numbered heading like "1. Section Title"
+        if re.match(r"^\d+\.\s+[A-Z]", stripped) and len(stripped) < 80:
+            return True
+        # "Title Case:" pattern
+        if re.match(r"^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,6}\s*:\s*$", stripped):
+            return True
+
+        return False
+
+    def _blocks_to_chunks(self, blocks: List[Dict]) -> List[EnrichedChunk]:
+        """Convert detected blocks into EnrichedChunk objects, respecting size limits."""
+        enriched = []
+        current_header = None
+
+        for block in blocks:
+            block_text = "\n".join(block["lines"]).strip()
+            if not block_text:
+                continue
+
+            block_type = block.get("block_type", "paragraph")
+            heading = block.get("heading")
+            page_number = block.get("page_number")
+
+            if block_type == "heading":
+                current_header = heading
+                continue  # Headings get merged into the next chunk's header
+
+            # Map block_type to content_type
+            content_type_map = {
+                "paragraph": "Paragraph",
+                "table": "Table",
+                "list": "List",
+            }
+            content_type = content_type_map.get(block_type, "Paragraph")
+
+            # Classify section
+            section_text = (current_header or "") + " " + block_text[:500]
+            section_type = classify_section(section_text)
+
+            if len(block_text) <= self.chunk_size * 1.5:
+                enriched.append(EnrichedChunk(
+                    text=block_text,
+                    section_type=section_type,
+                    content_type=content_type,
+                    section_header=current_header,
+                    page_number=page_number,
+                ))
+            else:
+                # Split oversized blocks at sentence boundaries
+                sub_texts = self.fallback_splitter.split_text(block_text)
+                for sub in sub_texts:
+                    enriched.append(EnrichedChunk(
+                        text=sub,
+                        section_type=section_type,
+                        content_type=content_type,
+                        section_header=current_header,
+                        page_number=page_number,
+                    ))
+
+        # Merge tiny chunks
+        merged = self._merge_small_enriched(enriched)
+        return merged
+
+    def _merge_small_enriched(self, chunks: List[EnrichedChunk]) -> List[EnrichedChunk]:
+        """Merge enriched chunks that are too small."""
+        if not chunks:
+            return chunks
+
+        merged = []
+        current = None
+
+        for chunk in chunks:
+            if current is None:
+                current = chunk
+                continue
+
+            current_len = len(current.text)
+            chunk_len = len(chunk.text)
+
+            should_merge = (
+                current_len < self.min_chunk_size
+                and current_len + chunk_len < self.chunk_size * 1.5
+                and chunk.content_type == current.content_type
             )
 
-            # 2. Safety Check: Process each semantic chunk
-            for chunk in initial_chunks:
-                # If chunk is too big (Mega-Chunk), force split it
-                if len(chunk) > 2000:
-                    sub_chunks = recursive_splitter.split_text(chunk)
-                    final_chunks.extend(sub_chunks)
-                # If chunk is too small (Noise), skip or merge?
-                # For now, let's keep it unless it's extremely small (<30 chars)
-                elif len(chunk) < 30:
-                    continue
-                else:
-                    final_chunks.append(chunk)
+            if should_merge:
+                current.text = current.text + "\n\n" + chunk.text
+                if not current.section_header and chunk.section_header:
+                    current.section_header = chunk.section_header
+            else:
+                merged.append(current)
+                current = chunk
 
-            return final_chunks
+        if current is not None:
+            merged.append(current)
 
-        except Exception as e:
-            print(f"Semantic chunking failed: {e}. Falling back to recursive.")
-            # Fallback
-            recursive = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-            return recursive.split_text(text)
+        return merged
 
 
 class HybridLayoutSemanticChunker(Chunker):
     """
-    Combines layout awareness with semantic chunking for optimal results.
-
-    Optimized for LIC insurance documents based on 2025 RAG best practices:
-    - Default chunk size: 1800 chars (~450 tokens)
-    - Tables preserved up to 3000 chars
-    - Small sections merged automatically
-    - Contextual headers prepended for better retrieval
+    Combines layout-aware splitting with semantic refinement.
 
     Strategy:
-    1. First pass: Layout-aware section detection
-    2. Second pass: Merge small sections, add context headers
-    3. Third pass: Semantic refinement for large paragraphs only
+    1. Use LayoutAwareChunker to detect structure and split at layout boundaries.
+    2. For oversized layout chunks, use SemanticChunker to refine splits.
+    3. Return EnrichedChunk objects with full metadata.
     """
 
-    def __init__(self, embedder: Embedder, chunk_size: int = 1800):
-        self.layout_chunker = LayoutAwareChunker(chunk_size=chunk_size)
+    def __init__(
+        self,
+        embedder: "Embedder" = None,
+        chunk_size: int = None,
+        similarity_threshold: float = 0.5,
+    ):
+        self.chunk_size = chunk_size or settings.CHUNK_SIZE
         self.embedder = embedder
-        self.chunk_size = chunk_size
-
-        # Initialize semantic chunker
-        if hasattr(embedder, 'client') and hasattr(embedder.client, 'embed_documents'):
-            self.embeddings = embedder.client
-        else:
-            self.embeddings = embedder
+        self.layout_chunker = LayoutAwareChunker(chunk_size=self.chunk_size)
+        self.semantic_chunker = SemanticChunker(
+            embedder=embedder,
+            chunk_size=self.chunk_size,
+            similarity_threshold=similarity_threshold,
+        )
 
     def chunk(self, text: str) -> List[str]:
-        """Hybrid chunking combining layout and semantic approaches."""
-        return [c.text for c in self.chunk_with_metadata(text)]
+        """Split text using hybrid layout + semantic approach."""
+        enriched = self.chunk_with_metadata(text)
+        return [c.text for c in enriched]
 
     def chunk_with_metadata(self, text: str) -> List[EnrichedChunk]:
         """
-        Hybrid chunking with full metadata.
-
-        Process:
-        1. Layout-aware chunking first (section detection, table preservation)
-        2. For large paragraph sections, apply semantic refinement
+        Split text using layout detection, then refine large chunks semantically.
+        Returns EnrichedChunk objects with section_type, content_type, etc.
         """
-        # Get layout-aware chunks
+        if not text or not text.strip():
+            return []
+
+        # Step 1: Layout-aware chunking
         layout_chunks = self.layout_chunker.chunk_with_metadata(text)
 
-        final_chunks = []
-
+        # Step 2: Refine oversized chunks with semantic splitting
+        refined = []
         for chunk in layout_chunks:
-            # Tables and lists: keep as-is (layout is more important)
-            if chunk.content_type in ("Table", "List"):
-                final_chunks.append(chunk)
-            # Large paragraphs: consider semantic splitting
-            elif len(chunk.text) > self.chunk_size * 1.3:
-                # Apply semantic refinement
-                semantic_sub = self._semantic_refine(chunk)
-                final_chunks.extend(semantic_sub)
+            if len(chunk.text) > self.chunk_size * 1.5 and chunk.content_type == "Paragraph":
+                # Use semantic chunker to split large paragraph chunks
+                sub_texts = self.semantic_chunker.chunk(chunk.text)
+                for sub in sub_texts:
+                    refined.append(EnrichedChunk(
+                        text=sub,
+                        section_type=chunk.section_type,
+                        content_type=chunk.content_type,
+                        section_header=chunk.section_header,
+                        page_number=chunk.page_number,
+                    ))
             else:
-                final_chunks.append(chunk)
+                refined.append(chunk)
 
-        return final_chunks
-
-    def _semantic_refine(self, chunk: EnrichedChunk) -> List[EnrichedChunk]:
-        """Apply semantic chunking to a large paragraph chunk."""
-        try:
-            semantic_splitter = LCSemanticChunker(
-                embeddings=self.embeddings,
-                breakpoint_threshold_type="percentile",
-                breakpoint_threshold_amount=90  # More aggressive for refinement
-            )
-
-            docs = semantic_splitter.create_documents([chunk.text])
-            sub_texts = [d.page_content for d in docs]
-
-            # Create enriched chunks preserving original metadata
-            result = []
-            for i, text in enumerate(sub_texts):
-                if len(text.strip()) < 30:
-                    continue
-
-                # Add context for continuation
-                if i > 0 and chunk.section_header:
-                    text = f"(Continued: {chunk.section_header})\n{text}"
-
-                result.append(EnrichedChunk(
-                    text=text,
-                    section_type=chunk.section_type,
-                    content_type=chunk.content_type,
-                    section_header=chunk.section_header,
-                    page_number=chunk.page_number,
-                    has_financial_data=chunk.has_financial_data or "₹" in text or "Rs." in text,
-                    has_age_criteria=chunk.has_age_criteria or bool(re.search(r"\d+\s*years?", text, re.I))
-                ))
-
-            return result if result else [chunk]
-
-        except Exception as e:
-            print(f"Semantic refinement failed: {e}")
-            return [chunk]
+        return refined

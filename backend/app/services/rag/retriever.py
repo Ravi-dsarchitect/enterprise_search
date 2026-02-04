@@ -99,42 +99,49 @@ class Retriever:
         return qdrant_models.Filter(must=conditions)
 
     async def search(
-        self, 
-        query: str, 
+        self,
+        query: str,
         limit: int = 5,
         use_hybrid: bool = False,
-        metadata_filters: Optional[Dict[str, Any]] = None
+        metadata_filters: Optional[Dict[str, Any]] = None,
+        is_hyde: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Search with optional hybrid mode and metadata filtering.
-        
+
         Args:
             query: Search query text
             limit: Number of final results to return
             use_hybrid: If True, combine vector + BM25 search using RRF
             metadata_filters: Optional filters to apply (e.g., {"source": "doc.pdf"})
-        
+            is_hyde: If True, embed query as document (no BGE prefix) for HyDE search
+
         Returns:
             List of ranked documents with scores
         """
         # Build Qdrant filter if metadata filters provided
         qdrant_filter = self._build_qdrant_filter(metadata_filters)
-        
+
         if use_hybrid:
-            print(f"🔀 Hybrid search mode: Vector + BM25")
-            return await self._hybrid_search(query, limit, qdrant_filter, metadata_filters)
+            print(f"Hybrid search mode: Vector + BM25")
+            return await self._hybrid_search(query, limit, qdrant_filter, metadata_filters, is_hyde)
         else:
-            return await self._vector_search(query, limit, qdrant_filter)
+            return await self._vector_search(query, limit, qdrant_filter, is_hyde)
     
     async def _vector_search(
-        self, 
-        query: str, 
+        self,
+        query: str,
         limit: int,
-        qdrant_filter: Optional[qdrant_models.Filter] = None
+        qdrant_filter: Optional[qdrant_models.Filter] = None,
+        is_hyde: bool = False,
     ) -> List[Dict[str, Any]]:
         """Standard vector-only search."""
-        # 1. Generate Query Embedding
-        query_vector = self.embedder.embed_query(query)
+        # 1. Generate Embedding
+        # HyDE: embed as document (no query prefix) since it's a hypothetical document
+        if is_hyde:
+            query_vector = self.embedder.embed_documents([query])[0]
+        else:
+            query_vector = self.embedder.embed_query(query)
         
         # 2. Semantic Search (Fetch more candidates for re-ranking)
         candidate_limit = limit * 2
@@ -168,16 +175,21 @@ class Retriever:
         query: str,
         limit: int,
         qdrant_filter: Optional[qdrant_models.Filter] = None,
-        metadata_filters: Optional[Dict[str, Any]] = None
+        metadata_filters: Optional[Dict[str, Any]] = None,
+        is_hyde: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Hybrid search combining vector and BM25 using Reciprocal Rank Fusion.
         """
         # Fetch more candidates for fusion
         candidate_limit = limit * 3
-        
+
         # 1. Vector Search
-        query_vector = self.embedder.embed_query(query)
+        # HyDE: embed as document (no query prefix) since it's a hypothetical document
+        if is_hyde:
+            query_vector = self.embedder.embed_documents([query])[0]
+        else:
+            query_vector = self.embedder.embed_query(query)
         
         vector_results = self.qdrant.query_points(
             collection_name=settings.QDRANT_COLLECTION_NAME,

@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 import json
-from app.services.rag.service import RAGService
+from app.services.rag.service import get_rag_service
 
 router = APIRouter()
 
@@ -29,7 +29,7 @@ class ChatResponse(BaseModel):
 @router.post("/query", response_model=ChatResponse)
 async def chat_query(request: ChatRequest):
     """Non-streaming query endpoint (returns complete response)."""
-    service = RAGService()
+    service = get_rag_service()
     try:
         # Convert Pydantic models to dicts for the service layer
         history = [{"role": msg.role, "content": msg.content} for msg in request.conversation_history] if request.conversation_history else None
@@ -59,8 +59,8 @@ async def chat_query_stream(request: ChatRequest):
     - token: Individual LLM response tokens
     - done: Completion signal with full answer
     """
-    service = RAGService()
-    
+    service = get_rag_service()
+
     async def event_generator():
         try:
             # Convert Pydantic models to dicts for the service layer

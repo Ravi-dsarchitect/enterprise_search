@@ -140,8 +140,17 @@ class IngestionService:
                 if any(x in chunk_text for x in ["Year", "Age", "Maturity", "Deadline"]):
                     entity_hints.append("Time/Duration")
 
-            # Generate chunk title from content
-            chunk_title = self._extract_chunk_title(chunk_text, section_header, i)
+            # Generate dynamic chunk title using 3-layer metadata
+            chunk_meta_for_title = {
+                "chunk_tags": chunk_tags,
+                "section_type": section_type,
+                "entity_hints": entity_hints,
+            }
+            chunk_title = self._extract_chunk_title(
+                chunk_text, section_header, i,
+                chunk_meta=chunk_meta_for_title,
+                doc_metadata=metadata,
+            )
 
             # Build payload with enriched metadata
             payload = {
@@ -275,21 +284,66 @@ class IngestionService:
 
         return metadata
 
-    def _extract_chunk_title(self, chunk_text: str, section_header: str = None, index: int = 0) -> str:
-        """Extract a meaningful title for the chunk."""
+    def _extract_chunk_title(
+        self,
+        chunk_text: str,
+        section_header: str = None,
+        index: int = 0,
+        chunk_meta: dict = None,
+        doc_metadata: dict = None,
+    ) -> str:
+        """
+        Generate a dynamic, descriptive title for the chunk using available metadata.
+
+        Priority:
+        1. Section header + plan context (e.g., "Jeevan Utsav - Death Benefit")
+        2. Top chunk tag + section type (e.g., "Eligibility Criteria - Age Requirements")
+        3. First significant line from text
+        4. Fallback generic title
+        """
+        plan_name = (doc_metadata or {}).get("plan_name", "")
+        tags = (chunk_meta or {}).get("chunk_tags", [])
+        section_type = (chunk_meta or {}).get("section_type", "general")
+        entity_hints = (chunk_meta or {}).get("entity_hints", [])
+
+        title_parts = []
+
+        # Use section header if available
         if section_header:
-            return section_header[:80]
+            base_title = section_header.strip()[:60]
+        elif tags:
+            # Use the most specific tag as title basis
+            base_title = tags[0]
+        else:
+            # Extract from first significant line of text
+            lines = [l.strip() for l in chunk_text.split('\n') if l.strip() and len(l.strip()) > 3]
+            if lines:
+                base_title = lines[0].lstrip("#*-• ").strip()[:60]
+            else:
+                base_title = None
 
-        # Use the first significant line as the title
-        lines = [l.strip() for l in chunk_text.split('\n') if l.strip() and len(l.strip()) > 3]
-        if lines:
-            # Clean up markdown headers/bullets from title
-            title = lines[0].lstrip("#*-• ").strip()
-            if len(title) > 80:
-                title = title[:77] + "..."
-            return title
+        if not base_title:
+            # Final fallback
+            if section_type != "general":
+                return get_section_display_name(section_type)
+            return f"Section {index + 1}"
 
-        return f"Section {index + 1}"
+        title_parts.append(base_title)
+
+        # Add plan context if not already in title
+        if plan_name and plan_name.lower() not in base_title.lower():
+            title_parts.insert(0, plan_name)
+
+        # Add entity hint qualifier for specificity
+        if entity_hints and len(" - ".join(title_parts)) < 60:
+            hint = entity_hints[0]
+            if hint not in base_title:
+                title_parts.append(f"({hint})")
+
+        title = " - ".join(title_parts)
+        if len(title) > 100:
+            title = title[:97] + "..."
+        return title
     
     def _convert_dates_to_timestamps(self, metadata: dict) -> dict:
         """
