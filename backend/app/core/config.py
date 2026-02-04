@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     # LLM Configuration
     LLM_PROVIDER: str = "ollama"
-    LLM_MODEL_NAME: str = "qwen2.5:14b"
+    LLM_MODEL_NAME: str = "qwen2.5:7b"
     LLM_METADATA_MODEL: str = "qwen2.5:7b"  # Smaller model for metadata extraction during ingestion
     GROQ_API_KEY: str = ""
 
