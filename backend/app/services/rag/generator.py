@@ -24,12 +24,15 @@ class BaseLangChainGenerator(LLMGenerator):
             section = payload.get("section_header", "") or ""
             score = item.get("score", 0)
 
+            confidence = item.get("confidence", 0)
+            confidence_pct = f"{confidence * 100:.0f}%"
+
             header = f"[{i+1}] Source: {source}"
             if page:
                 header += f" | Page {page}"
             if section:
                 header += f" | Section: {section}"
-            header += f" (relevance: {score:.2f})"
+            header += f" | confidence: {confidence_pct}"
 
             context_parts.append(f"{header}\n{item['text']}\n{'='*60}")
 
@@ -37,11 +40,17 @@ class BaseLangChainGenerator(LLMGenerator):
 
         system_prompt = """You are a document-grounded assistant for the Life Insurance Corporation (LIC) of India.
 
+CONFIDENCE SCORES:
+- Each passage has a confidence score (%) showing the probability it contains the answer.
+- A passage with ≥40% confidence is a strong primary source — base your answer on it.
+- Passages with <10% confidence are supplementary; only use them if they clearly relate to the question.
+- If the top passage has high confidence but others are low, focus almost entirely on the top passage.
+- NEVER let a low-confidence passage override facts from a high-confidence one.
+
 RULES:
 - Answer using information from the numbered context passages below.
 - Each passage is separated by === lines. Treat each passage as a SEPARATE piece of evidence.
 - IMPORTANT: Do NOT mix or combine numerical values, amounts, or specific details from different passages. Each passage may describe a different plan, club tier, or benefit category. Only attribute data to the specific entity named in that passage.
-- Passage [1] is the most relevant. Give it the highest priority.
 - DO NOT use outside knowledge or training data. Only use what is in the passages.
 - If the passages contain NO relevant information at all, respond with: "I don't have sufficient information in the provided documents to answer this question."
 - Do NOT refuse to answer if the passages contain relevant information, even if partial.
@@ -173,33 +182,26 @@ class AnswerCritic:
 
         Returns the corrected answer, or the original if no errors found.
         """
-        prompt = f"""You are a strict fact-checking assistant. You must verify the ANSWER against the source PASSAGES.
-
-PASSAGES:
-{context_str}
+        prompt = f"""TASK: Check if the ANSWER matches what Passage [1] says.
 
 QUESTION: {query}
 
-ANSWER TO VERIFY:
+PASSAGE [1] (most relevant):
+{context_str.split('=' * 60)[0].strip()}
+
+ANSWER TO CHECK:
 {answer}
 
-VERIFICATION STEPS (do each one):
+STEPS:
+1. What does Passage [1] say is the answer to the question? Extract the key facts (numbers, amounts, names).
+2. What does the ANSWER say? Extract the same key facts.
+3. Do they match?
 
-STEP 1 — ENTITY CHECK:
-The question asks about a specific entity (e.g., a plan name, club tier, category). Identify it.
-Then check: does the ANSWER use data that belongs to THAT entity, or does it accidentally use data from a DIFFERENT entity in another passage?
-Example error: Question asks about "Corporate Club" but answer uses numbers from "CM Club" or "ZM Club".
+If the ANSWER uses DIFFERENT numbers or attributes than Passage [1]:
+→ Rewrite the answer using ONLY facts from Passage [1]. Include the source citation.
 
-STEP 2 — PASSAGE [1] PRIORITY:
-Passage [1] is the highest-relevance result. Read it carefully.
-Does the ANSWER use the key facts from [1]? If [1] directly answers the question but the ANSWER uses different data from a lower-ranked passage, that is an error.
-
-STEP 3 — CONFLICT CHECK:
-If passage [1] and another passage give DIFFERENT values for the same attribute (e.g., different loan amounts for different club tiers), and the answer picks the WRONG one for the entity in the question, that is an error.
-
-DECISION:
-If ANY step found an error → Output ONLY the corrected answer with proper citations. Do not explain.
-If ALL steps pass → Output ONLY the word: PASS"""
+If they match:
+→ Output ONLY: PASS"""
 
         messages = [HumanMessage(content=prompt)]
         response = self._get_llm().invoke(messages)

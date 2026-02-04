@@ -1,5 +1,6 @@
+import math
 import time
-from typing import Dict, Any
+from typing import Dict, Any, List
 from app.services.rag.generator import LLMFactory, LLMGenerator, AnswerCritic
 from app.services.rag.query_transformer import QueryTransformer
 from app.services.rag.query_analyzer import QueryAnalyzer
@@ -26,6 +27,19 @@ class RAGService:
         self.query_transformer = QueryTransformer()
         self.query_analyzer = QueryAnalyzer()
         self.critic = AnswerCritic()
+
+    @staticmethod
+    def _compute_confidence(docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Convert raw reranker/retrieval scores to softmax probabilities."""
+        if not docs:
+            return docs
+        scores = [doc.get("score", 0.0) for doc in docs]
+        max_score = max(scores)
+        exp_scores = [math.exp(s - max_score) for s in scores]
+        total = sum(exp_scores)
+        for doc, exp_s in zip(docs, exp_scores):
+            doc["confidence"] = exp_s / total
+        return docs
 
     def _build_context_str(self, context):
         """Build formatted context string for the critic (same format as generator)."""
@@ -114,7 +128,8 @@ class RAGService:
         # The retriever already reranks implicitly per search, but re-ranking the combined set is better.
         # For simplicity, we'll trust the individual top results or just slice.
         final_context = unique_results[:10] # Cap context size
-        
+        final_context = self._compute_confidence(final_context)
+
         # 5. Generate Answer
         llm_start = time.time()
         answer = self.generator.generate_answer(query, final_context, conversation_history=conversation_history)
@@ -208,7 +223,8 @@ class RAGService:
                 unique_results.append(doc)
         
         final_context = unique_results[:10]
-        
+        final_context = self._compute_confidence(final_context)
+
         # Yield metadata and citations first
         yield {
             "type": "metadata",
