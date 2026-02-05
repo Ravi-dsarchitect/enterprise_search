@@ -26,7 +26,7 @@ class RAGService:
         self.generator: LLMGenerator = LLMFactory.create_generator()
         self.query_transformer = QueryTransformer()
         self.query_analyzer = QueryAnalyzer()
-        self.critic = AnswerCritic()
+        self.critic = AnswerCritic() if settings.ENABLE_ANSWER_CRITIC else None
 
     @staticmethod
     def _compute_confidence(docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -135,16 +135,17 @@ class RAGService:
         answer = self.generator.generate_answer(query, final_context, conversation_history=conversation_history)
         print(f"⏱️  LLM generation took: {time.time() - llm_start:.2f}s")
 
-        # 6. Critic: verify answer against source passages
-        critic_start = time.time()
-        context_str = self._build_context_str(final_context)
-        verified_answer = self.critic.verify_and_fix(answer, query, context_str)
-        critic_time = time.time() - critic_start
-        if verified_answer != answer:
-            print(f"🔄 Critic corrected the answer ({critic_time:.2f}s)")
-            answer = verified_answer
-        else:
-            print(f"✅ Critic passed the answer ({critic_time:.2f}s)")
+        # 6. Critic: verify answer against source passages (optional)
+        if self.critic:
+            critic_start = time.time()
+            context_str = self._build_context_str(final_context)
+            verified_answer = self.critic.verify_and_fix(answer, query, context_str)
+            critic_time = time.time() - critic_start
+            if verified_answer != answer:
+                print(f"🔄 Critic corrected the answer ({critic_time:.2f}s)")
+                answer = verified_answer
+            else:
+                print(f"✅ Critic passed the answer ({critic_time:.2f}s)")
 
         total_time = time.time() - start_time
         print(f"✅ Total query time: {total_time:.2f}s\n")
@@ -253,20 +254,21 @@ class RAGService:
         
         print(f"⏱️  LLM generation took: {time.time() - llm_start:.2f}s")
 
-        # 5. Critic: verify answer against source passages
-        critic_start = time.time()
-        context_str = self._build_context_str(final_context)
-        verified_answer = self.critic.verify_and_fix(full_answer, query, context_str)
-        critic_time = time.time() - critic_start
-        if verified_answer != full_answer:
-            print(f"🔄 Critic corrected the answer ({critic_time:.2f}s)")
-            full_answer = verified_answer
-            yield {
-                "type": "correction",
-                "data": full_answer
-            }
-        else:
-            print(f"✅ Critic passed the answer ({critic_time:.2f}s)")
+        # 5. Critic: verify answer against source passages (optional)
+        if self.critic:
+            critic_start = time.time()
+            context_str = self._build_context_str(final_context)
+            verified_answer = self.critic.verify_and_fix(full_answer, query, context_str)
+            critic_time = time.time() - critic_start
+            if verified_answer != full_answer:
+                print(f"🔄 Critic corrected the answer ({critic_time:.2f}s)")
+                full_answer = verified_answer
+                yield {
+                    "type": "correction",
+                    "data": full_answer
+                }
+            else:
+                print(f"✅ Critic passed the answer ({critic_time:.2f}s)")
 
         print(f"✅ Total query time: {time.time() - start_time:.2f}s\n")
 

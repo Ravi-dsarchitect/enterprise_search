@@ -345,7 +345,7 @@ class RAGEvaluator:
             )
         if len(analysis["low_score_queries"]) > len(failures) * 0.5:
             analysis["recommendations"].append(
-                "Consider switching to OpenAI embeddings for better semantic understanding"
+                "Consider tuning embeddings or chunking strategy for better semantic understanding"
             )
 
         return dict(analysis)

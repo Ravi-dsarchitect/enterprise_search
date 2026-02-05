@@ -18,8 +18,8 @@ class Settings(BaseSettings):
 
     # LLM Configuration
     LLM_PROVIDER: str = "ollama"
-    LLM_MODEL_NAME: str = "qwen2.5:7b"
-    LLM_METADATA_MODEL: str = "qwen2.5:7b"  # Smaller model for metadata extraction during ingestion
+    LLM_MODEL_NAME: str = "qwen2.5:3b"
+    LLM_METADATA_MODEL: str = "qwen2.5:3b"  # Smaller model for metadata extraction during ingestion
     GROQ_API_KEY: str = ""
 
     # Ollama / Self-hosted (optional)
@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 800
     CHUNK_OVERLAP: int = 100
     MAX_TABLE_CHUNK: int = 2000
+
+    # Smart Chunking Configuration
+    USE_SMART_CHUNKING: bool = True
+    HIERARCHICAL_PARENT_CHUNK_SIZE: int = 2400  # 3x normal for section context
+    HIERARCHICAL_MIN_SECTION_SIZE: int = 800    # Min section size for parent-child
+
+    # Answer Critic (disabled by default - adds latency)
+    ENABLE_ANSWER_CRITIC: bool = False
 
     class Config:
         env_file = ("../.env", ".env")

@@ -19,17 +19,22 @@ from app.services.ingestion.chunkers import (
 )
 from app.services.ingestion.interfaces import StructuredChunk
 from app.services.ingestion.metadata import MetadataExtractor, get_section_display_name, enrich_chunk_metadata
+from app.services.ingestion.smart_chunking import SmartChunker
 
 
 class IngestionService:
-    def __init__(self, use_llm_metadata: bool = True):
+    def __init__(self, use_llm_metadata: bool = True, use_smart_chunking: bool = True):
         self.qdrant: QdrantClient = get_qdrant_client()
 
         # Use cached embedder (loaded once, reused across requests)
         self.embedder: Embedder = get_cached_embedder()
 
-        # StructuredChunker uses ParsedDocument with heading-based section grouping
-        self.chunker = StructuredChunker()
+        # Smart chunking: analyze content first, then choose chunker
+        self.use_smart_chunking = use_smart_chunking
+        if use_smart_chunking:
+            self.chunker = SmartChunker(use_llm_classifier=False, verbose=True)
+        else:
+            self.chunker = StructuredChunker()
 
         # LLM-based metadata extraction (optional - can be disabled for local testing)
         self.use_llm_metadata = use_llm_metadata

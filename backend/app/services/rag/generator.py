@@ -99,17 +99,6 @@ Answer using the context passages above. Pay attention to which passage each det
             if chunk.content:
                 yield chunk.content
 
-class OpenAIGenerator(BaseLangChainGenerator):
-    def __init__(self):
-        from langchain_openai import ChatOpenAI
-        model = settings.LLM_MODEL_NAME or "gpt-4o"
-        llm = ChatOpenAI(
-            model=model,
-            temperature=0.1,
-            openai_api_key=settings.OPENAI_API_KEY
-        )
-        super().__init__(llm)
-
 class GroqGenerator(BaseLangChainGenerator):
     """Groq inference platform - fast and free tier available"""
     def __init__(self):
@@ -217,14 +206,12 @@ class LLMFactory:
     @staticmethod
     def create_generator() -> LLMGenerator:
         provider = settings.LLM_PROVIDER.lower()
-        
-        if provider == "openai":
-            return OpenAIGenerator()
-        elif provider == "groq":
+
+        if provider == "groq":
             return GroqGenerator()
         elif provider == "ollama":
             return OllamaGenerator()
         elif provider == "bedrock":
             return BedrockGenerator()
         else:
-            raise ValueError(f"Unsupported LLM provider: {provider}")
+            raise ValueError(f"Unsupported LLM provider: {provider}. Supported: groq, ollama, bedrock")
