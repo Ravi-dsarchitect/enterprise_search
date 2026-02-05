@@ -60,7 +60,9 @@ class ChunkingFactory:
         self.register("hierarchical", HierarchicalChunker)
         self.register("qa", QAChunker)
         self.register("table_aware", TableAwareChunker)
-        self.register("hybrid_section", HybridSectionChunker)
+        # Enable LLM-based section classification by default for better accuracy
+        # (only triggers when regex returns "general" and content looks misclassified)
+        self.register("hybrid_section", HybridSectionChunker, {"use_llm_classification": True})
 
         self._initialized = True
 

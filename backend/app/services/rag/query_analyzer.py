@@ -41,7 +41,7 @@ class QueryAnalyzer:
 - premium_type: [Single Premium, Limited Pay, Regular Premium]
 
 === CHUNK-LEVEL FIELDS (IMPORTANT for content-specific queries) ===
-- section_type: [eligibility, benefits, financial, riders, tax, claims, general]
+- section_type: [eligibility, benefits, premium, surrender, loan, tax, rider, claim, annuity, fund, charges, exclusions, general]
 - content_type: [text, table]
 - chunk_tags: Array of content tags like ["Death Benefit", "Tax Benefit", "Loan Facility", "Eligibility Criteria"]
 - contains_age_info: true/false (has age limits, policy terms)
@@ -49,12 +49,18 @@ class QueryAnalyzer:
 
 === SECTION TYPE MAPPING (use for content-specific queries) ===
 Query contains → section_type filter:
-- "eligibility", "age", "who can buy", "entry age", "sum assured range", "policy term" → "eligibility"
-- "benefits", "death benefit", "maturity benefit", "survival benefit", "bonus", "payout", "what do I get" → "benefits"
-- "premium", "surrender value", "loan", "paid-up", "GSV", "SSV", "how much to pay" → "financial"
-- "rider", "accidental death", "critical illness", "waiver of premium", "ADB", "WOP" → "riders"
+- "eligibility", "age", "who can buy", "entry age", "minimum age", "maximum age" → "eligibility"
+- "benefits", "death benefit", "maturity benefit", "survival benefit", "bonus", "payout" → "benefits"
+- "premium", "how much to pay", "premium paying term", "mode of payment" → "premium"
+- "surrender", "paid-up", "GSV", "SSV", "lapse", "revival", "free look" → "surrender"
+- "loan", "loan facility", "policy loan" → "loan"
+- "rider", "accidental death", "critical illness", "waiver of premium", "ADB", "WOP" → "rider"
 - "tax", "80C", "10(10D)", "deduction", "tax benefit" → "tax"
-- "claim", "settlement", "nominee", "documents required", "how to claim" → "claims"
+- "claim", "settlement", "nominee", "documents required", "how to claim" → "claim"
+- "pension", "annuity", "vesting", "corpus" → "annuity"
+- "fund", "NAV", "ULIP", "unit linked" → "fund"
+- "charges", "fee", "deduction", "mortality charge" → "charges"
+- "exclusion", "not covered", "limitation" → "exclusions"
 
 === CONTENT TYPE MAPPING ===
 - "table", "comparison", "rates", "charges", "factor" → content_type: "table"
@@ -73,9 +79,13 @@ Pension Plan, ULIP, Fund Options, Claim Process, Eligibility Criteria, etc.
 - "whole life", "lifelong" → plan_type: "Whole Life"
 - "endowment", "savings" → plan_type: "Endowment"
 
-=== TEMPORAL HINTS ===
-- "recent", "latest" → document_date >= {thirty_days_ago}
-- "this year" → document_date >= 2026-01-01
+=== TEMPORAL HINTS (ONLY use when query explicitly mentions time) ===
+IMPORTANT: Do NOT add document_date filter unless query contains words like:
+- "recent", "latest", "new", "updated" → document_date >= {thirty_days_ago}
+- "this year", "2026" → document_date >= 2026-01-01
+- "last year", "2025" → document_date in 2025
+
+If the query does NOT mention any temporal keywords, set document_date to null.
 
 === EXAMPLES ===
 Q: "What is the eligibility for Jeevan Umang?"
@@ -110,9 +120,11 @@ Return JSON:
   "reasoning": "brief explanation"
 }}
 
-IMPORTANT: For content-specific queries, ALWAYS include section_type filter.
-Return confidence < 0.5 only if query is very generic with no clear hints.
-Return ONLY valid JSON, no markdown."""
+IMPORTANT RULES:
+1. For content-specific queries, ALWAYS include section_type filter.
+2. NEVER add document_date filter unless query explicitly mentions "recent", "latest", "this year", etc.
+3. Return confidence < 0.5 only if query is very generic with no clear hints.
+4. Return ONLY valid JSON, no markdown."""
 
         user_prompt = f"""Current date: {current_date}
 
@@ -148,7 +160,17 @@ Extract filter hints:"""
                 k: v for k, v in filters.items()
                 if v is not None and v != [] and v != "" and v != {}
             }
-            
+
+            # Post-process: Remove document_date unless query has temporal keywords
+            # (LLM often ignores this instruction, so we enforce it here)
+            if "document_date" in cleaned_filters:
+                temporal_keywords = ["recent", "latest", "new", "updated", "this year", "last year", "2026", "2025", "2024"]
+                query_lower = query.lower()
+                has_temporal = any(kw in query_lower for kw in temporal_keywords)
+                if not has_temporal:
+                    del cleaned_filters["document_date"]
+                    print(f"   (Removed document_date - no temporal keywords in query)")
+
             if confidence >= confidence_threshold and cleaned_filters:
                 print(f"🎯 Auto-extracted filters (confidence: {confidence:.2f}): {cleaned_filters}")
                 print(f"   Reasoning: {reasoning}")
@@ -167,7 +189,11 @@ Extract filter hints:"""
 
     def get_available_section_types(self) -> list:
         """Return list of available chunk section types."""
-        return ["eligibility", "benefits", "financial", "riders", "tax", "claims", "general"]
+        return [
+            "eligibility", "benefits", "premium", "surrender", "loan",
+            "tax", "rider", "claim", "annuity", "fund", "charges",
+            "exclusions", "general"
+        ]
 
     def get_available_plan_types(self) -> list:
         """Return list of available plan types."""

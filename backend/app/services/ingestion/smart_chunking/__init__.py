@@ -29,6 +29,10 @@ from app.services.ingestion.smart_chunking.hierarchical_chunker import Hierarchi
 from app.services.ingestion.smart_chunking.qa_chunker import QAChunker
 from app.services.ingestion.smart_chunking.table_aware_chunker import TableAwareChunker
 from app.services.ingestion.smart_chunking.hybrid_section_chunker import HybridSectionChunker
+from app.services.ingestion.smart_chunking.llm_section_classifier import (
+    LLMSectionClassifier,
+    classify_with_fallback,
+)
 
 __all__ = [
     # Main entry point
@@ -48,4 +52,7 @@ __all__ = [
     "QAChunker",
     "TableAwareChunker",
     "HybridSectionChunker",
+    # LLM-based classification
+    "LLMSectionClassifier",
+    "classify_with_fallback",
 ]

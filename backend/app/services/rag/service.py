@@ -25,7 +25,11 @@ class RAGService:
     # Hard filters: explicit mentions that should always be applied
     HARD_FILTER_KEYS = {"plan_name", "plan_number", "source", "category"}
     # Soft filters: inferred from query intent, can be loosened if no results
-    SOFT_FILTER_KEYS = {"section_type", "content_type", "chunk_tags", "contains_age_info", "contains_currency"}
+    SOFT_FILTER_KEYS = {
+        "section_type", "content_type", "chunk_tags",
+        "contains_age_info", "contains_currency",
+        "plan_type", "premium_type", "document_date"  # Inferred filters
+    }
 
     def __init__(self):
         self.retriever = Retriever()

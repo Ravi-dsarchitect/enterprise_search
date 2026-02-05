@@ -89,16 +89,26 @@ class HybridSectionChunker(Chunker):
         chunk_size: int = None,
         chunk_overlap: int = None,
         verbose: bool = True,
+        use_llm_classification: bool = True,
     ):
         self.chunk_size = chunk_size or settings.CHUNK_SIZE
         self.chunk_overlap = chunk_overlap or settings.CHUNK_OVERLAP
         self.verbose = verbose
+        self.use_llm_classification = use_llm_classification
 
         # Lazy-load specialized chunkers
         self._hierarchical_chunker = None
         self._qa_chunker = None
         self._table_chunker = None
         self._structured_chunker = None
+        self._llm_classifier = None
+
+    def _get_llm_classifier(self):
+        """Lazy-load LLM section classifier."""
+        if self._llm_classifier is None and self.use_llm_classification:
+            from app.services.ingestion.smart_chunking.llm_section_classifier import LLMSectionClassifier
+            self._llm_classifier = LLMSectionClassifier(use_small_model=True)
+        return self._llm_classifier
 
     def _get_hierarchical_chunker(self):
         if self._hierarchical_chunker is None:
@@ -227,12 +237,37 @@ class HybridSectionChunker(Chunker):
 
     def _classify_section(self, section: DocumentSection):
         """Classify section type and content pattern."""
-        # Determine section type from heading
+        # Determine section type from heading first (regex-based)
         if section.heading:
             section.section_type = classify_section(section.heading)
         else:
             # Classify from content
             section.section_type = classify_section(section.text[:500])
+
+        # If regex returned "general", use LLM for better classification
+        # This catches cases like tables with "Minimum Age | Maximum Age" headers
+        if section.section_type == "general" and self.use_llm_classification:
+            llm_classifier = self._get_llm_classifier()
+            if llm_classifier:
+                # Check if section looks like it might be misclassified
+                section_preview = section.text[:1500] + section.table_text[:500]
+                might_be_misclassified = (
+                    "|" in section_preview or
+                    "age" in section_preview.lower() or
+                    "minimum" in section_preview.lower() or
+                    "maximum" in section_preview.lower() or
+                    "premium" in section_preview.lower() or
+                    "benefit" in section_preview.lower()
+                )
+
+                if might_be_misclassified:
+                    context = section.heading if section.heading else None
+                    result = llm_classifier.classify(section_preview, context)
+
+                    if result.confidence >= 0.6 and result.section_type != "general":
+                        if self.verbose:
+                            print(f"    [LLM] Reclassified '{section.heading or 'untitled'}': general → {result.section_type} (conf: {result.confidence:.2f})")
+                        section.section_type = result.section_type
 
         # Determine content pattern (which chunker to use)
         section.content_pattern = self._detect_content_pattern(section)
