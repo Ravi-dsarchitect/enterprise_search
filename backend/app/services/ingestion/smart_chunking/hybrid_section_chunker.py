@@ -71,18 +71,18 @@ class HybridSectionChunker(Chunker):
     4. Merge all chunks with section context
     """
 
-    # Section patterns that benefit from hierarchical chunking
-    HIERARCHICAL_SECTIONS = {
-        "benefits", "death_benefit", "maturity_benefit", "survival_benefit",
-        "bonus", "rider", "loan", "surrender", "exclusions",
-    }
-
     # FAQ detection patterns
     FAQ_PATTERNS = [
         r"(?i)^\s*(?:Q[\s.:]*\d*|Question)[:.\s]+",
         r"(?i)^\s*\d+\.\s+.+\?\s*$",
         r"(?i)faq|frequently\s+asked",
     ]
+
+    # Section types that benefit from hierarchical chunking (parent-child context)
+    HIERARCHICAL_SECTIONS = {
+        "benefits", "death_benefit", "maturity_benefit", "survival_benefit",
+        "bonus", "rider", "loan", "surrender", "exclusions", "eligibility",
+    }
 
     def __init__(
         self,
@@ -242,13 +242,7 @@ class HybridSectionChunker(Chunker):
         text = section.text
         section_type = section.section_type
 
-        # Check if it's a benefits-type section that needs hierarchical
-        if section_type in self.HIERARCHICAL_SECTIONS:
-            # Only use hierarchical if section has enough content
-            if section.char_count > settings.HIERARCHICAL_MIN_SECTION_SIZE:
-                return "hierarchical"
-
-        # Check for FAQ pattern
+        # 1. Check for FAQ pattern
         faq_matches = sum(
             len(re.findall(p, text, re.MULTILINE))
             for p in self.FAQ_PATTERNS
@@ -256,7 +250,12 @@ class HybridSectionChunker(Chunker):
         if faq_matches >= 3:
             return "qa"
 
-        # Check if section is primarily tables
+        # 2. Check if section type benefits from hierarchical chunking
+        if section_type in self.HIERARCHICAL_SECTIONS:
+            if section.char_count > settings.HIERARCHICAL_MIN_SECTION_SIZE:
+                return "hierarchical"
+
+        # 3. Check if section is primarily tables
         if section.has_tables:
             table_chars = len(section.table_text)
             text_chars = section.char_count
@@ -265,14 +264,14 @@ class HybridSectionChunker(Chunker):
             if total > 0 and table_chars / total > 0.5:
                 return "tabular"
 
-        # Check for subsections (heading level 3+) → hierarchical
+        # 4. Check for subsections (heading level 3+) → hierarchical
         subsection_count = sum(
             1 for b in section.blocks if b.heading_level >= 3
         )
         if subsection_count >= 2 and section.char_count > 800:
             return "hierarchical"
 
-        # Default to structured
+        # 5. Default to narrative
         return "narrative"
 
     def _chunk_section(

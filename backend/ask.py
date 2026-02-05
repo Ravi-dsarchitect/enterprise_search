@@ -25,7 +25,7 @@ BEST_CONFIG = {
     "use_hybrid_search": True,
     "use_hyde": False,
     "use_decomposition": False,
-    "use_auto_filters": False,
+    "use_auto_filters": True,
     "limit": 5,
 }
 

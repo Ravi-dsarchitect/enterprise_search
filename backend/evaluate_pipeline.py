@@ -786,7 +786,7 @@ async def test_generation():
                     use_hyde=cfg["use_hyde"],
                     use_decomposition=cfg["use_decompose"],
                     use_hybrid_search=cfg["use_hybrid"],
-                    use_auto_filters=False,
+                    use_auto_filters=True,
                     limit=5,
                 )
                 elapsed = time.time() - start

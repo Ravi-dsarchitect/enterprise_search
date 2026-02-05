@@ -21,12 +21,72 @@ def get_rag_service() -> "RAGService":
 
 
 class RAGService:
+    # Filter categories for fallback logic
+    # Hard filters: explicit mentions that should always be applied
+    HARD_FILTER_KEYS = {"plan_name", "plan_number", "source", "category"}
+    # Soft filters: inferred from query intent, can be loosened if no results
+    SOFT_FILTER_KEYS = {"section_type", "content_type", "chunk_tags", "contains_age_info", "contains_currency"}
+
     def __init__(self):
         self.retriever = Retriever()
         self.generator: LLMGenerator = LLMFactory.create_generator()
         self.query_transformer = QueryTransformer()
         self.query_analyzer = QueryAnalyzer()
         self.critic = AnswerCritic() if settings.ENABLE_ANSWER_CRITIC else None
+
+    def _split_filters(self, filters: Dict[str, Any]) -> tuple:
+        """Split filters into hard (always apply) and soft (can loosen)."""
+        if not filters:
+            return None, None
+        hard = {k: v for k, v in filters.items() if k in self.HARD_FILTER_KEYS}
+        soft = {k: v for k, v in filters.items() if k in self.SOFT_FILTER_KEYS}
+        return hard or None, soft or None
+
+    async def _retrieve_with_fallback(
+        self,
+        search_text: str,
+        limit: int,
+        use_hybrid: bool,
+        metadata_filters: Dict[str, Any],
+        is_hyde: bool,
+        min_results: int = 1,
+    ) -> tuple:
+        """
+        Retrieve with fallback: full filters → hard filters only → no filters.
+
+        Returns: (results, filters_used, fallback_level)
+            fallback_level: 0=full, 1=hard-only, 2=no-filters
+        """
+        hard_filters, soft_filters = self._split_filters(metadata_filters)
+
+        # Level 0: Try with ALL filters
+        if metadata_filters:
+            results = await self.retriever.search(
+                search_text, limit=limit, use_hybrid=use_hybrid,
+                metadata_filters=metadata_filters, is_hyde=is_hyde
+            )
+            if len(results) >= min_results:
+                return results, metadata_filters, 0
+            print(f"  ⚠️  Only {len(results)} results with full filters, trying hard-only...")
+
+        # Level 1: Try with HARD filters only (drop soft filters)
+        if hard_filters:
+            results = await self.retriever.search(
+                search_text, limit=limit, use_hybrid=use_hybrid,
+                metadata_filters=hard_filters, is_hyde=is_hyde
+            )
+            if len(results) >= min_results:
+                print(f"  ✅ Got {len(results)} results with hard filters only")
+                return results, hard_filters, 1
+            print(f"  ⚠️  Only {len(results)} results with hard filters, trying no filters...")
+
+        # Level 2: No filters (pure semantic search)
+        results = await self.retriever.search(
+            search_text, limit=limit, use_hybrid=use_hybrid,
+            metadata_filters=None, is_hyde=is_hyde
+        )
+        print(f"  📊 Got {len(results)} results without filters (fallback)")
+        return results, None, 2
 
     @staticmethod
     def _compute_confidence(docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -102,17 +162,19 @@ class RAGService:
                     search_text = hypo_doc
                     is_hyde_query = True
 
-            # Retrieve
+            # Retrieve with fallback (full filters → hard-only → no filters)
             retrieval_start = time.time()
-            results = await self.retriever.search(
+            results, filters_used, fallback_level = await self._retrieve_with_fallback(
                 search_text,
                 limit=limit,
                 use_hybrid=use_hybrid_search,
                 metadata_filters=metadata_filters,
                 is_hyde=is_hyde_query,
+                min_results=2,  # Minimum results before fallback
             )
             all_results.extend(results)
-            print(f"Retrieval took: {time.time() - retrieval_start:.2f}s")
+            fallback_msg = ["full filters", "hard filters only", "no filters"][fallback_level]
+            print(f"Retrieval took: {time.time() - retrieval_start:.2f}s ({fallback_msg})")
             
         # 3. Deduplication (by source and text content)
         seen = set()
@@ -202,17 +264,19 @@ class RAGService:
                     search_text = hypo_doc
                     is_hyde_query = True
 
-            # Retrieve
+            # Retrieve with fallback (full filters → hard-only → no filters)
             retrieval_start = time.time()
-            results = await self.retriever.search(
+            results, filters_used, fallback_level = await self._retrieve_with_fallback(
                 search_text,
                 limit=limit,
                 use_hybrid=use_hybrid_search,
                 metadata_filters=metadata_filters,
                 is_hyde=is_hyde_query,
+                min_results=2,  # Minimum results before fallback
             )
             all_results.extend(results)
-            print(f"Retrieval took: {time.time() - retrieval_start:.2f}s")
+            fallback_msg = ["full filters", "hard filters only", "no filters"][fallback_level]
+            print(f"Retrieval took: {time.time() - retrieval_start:.2f}s ({fallback_msg})")
             
         # 3. Deduplication
         seen = set()

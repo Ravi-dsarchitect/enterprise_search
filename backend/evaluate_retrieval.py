@@ -59,13 +59,13 @@ class RAGEvaluator:
 
             start = time.time()
             try:
-                # Run full RAG pipeline (disable auto-filters to avoid false NO_RESULTS)
+                # Run full RAG pipeline with auto-filters for metadata-aware retrieval
                 rag_result = await self.rag_service.answer_query(
                     query=query,
                     use_hyde=config.get("use_hyde", False),
                     use_decomposition=False,
                     use_hybrid_search=config.get("use_hybrid", False),
-                    use_auto_filters=False,  # Disabled - causes NO_RESULTS with invalid filters
+                    use_auto_filters=True,  # Extract section_type, plan_name filters from query
                     limit=5
                 )
 
