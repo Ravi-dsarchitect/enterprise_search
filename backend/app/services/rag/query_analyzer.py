@@ -161,6 +161,14 @@ Extract filter hints:"""
                 if v is not None and v != [] and v != "" and v != {}
             }
 
+            # Remove boolean fields that can cause overly restrictive filtering
+            # These fields work best as hints rather than hard filters
+            boolean_hint_fields = {'contains_age_info', 'contains_currency'}
+            for field in boolean_hint_fields:
+                if field in cleaned_filters:
+                    del cleaned_filters[field]
+                    print(f"   (Removed {field} filter - using as hint only)")
+
             # Post-process: Remove document_date unless query has temporal keywords
             # (LLM often ignores this instruction, so we enforce it here)
             if "document_date" in cleaned_filters:
