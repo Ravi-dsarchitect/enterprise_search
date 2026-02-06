@@ -165,6 +165,12 @@ class IngestionService:
                 "entity_hints": entity_hints,
                 "chunk_tags": chunk_tags,
 
+                # Boolean content flags (for filtering)
+                "contains_age_info": chunk_meta.get("contains_age_info", False),
+                "contains_currency": chunk_meta.get("contains_currency", False),
+                "contains_numbers": chunk_meta.get("contains_numbers", False),
+                "contains_date_info": chunk_meta.get("contains_date_info", False),
+
                 # Contextual retrieval pointers
                 "prev_chunk_id": chunk_ids[i-1] if i > 0 else None,
                 "next_chunk_id": chunk_ids[i+1] if i < len(chunk_texts)-1 else None,

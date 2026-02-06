@@ -440,10 +440,15 @@ def enrich_chunk_metadata(
         if "Financial" not in entity_hints:
             entity_hints.append("Numerical")
 
-    # Age-related content
+    # Age-related content (enhanced to catch eligibility sections)
     if re.search(
-        r"\d+\s*(?:years?|yrs?)|entry\s*age|maturity\s*age|vesting\s*age|"
-        r"minimum\s*age|maximum\s*age|policy\s*term|ppt",
+        r"(?:minimum|maximum|entry|maturity|vesting)\s+age|"
+        r"age\s+(?:at\s+)?(?:entry|maturity|vesting)|"
+        r"\d+\s*days?\s*\(completed\)|"  # "30 days (completed)"
+        r"\d+\s*years?\s*\((?:completed|nearer\s+birthday)\)|"  # "55 years (nearer birthday)"
+        r"age\s+range|age\s+limit|eligibility.*age|"
+        r"(?:minimum|maximum).*\d+\s*(?:years?|days?)|"
+        r"policy\s*term|premium\s*paying\s*term|ppt\s*[=:]",
         text_lower,
     ):
         chunk_meta["contains_age_info"] = True

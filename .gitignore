@@ -25,3 +25,4 @@ venv/
 *.key
 *.xlsx
 *.json
+*.md

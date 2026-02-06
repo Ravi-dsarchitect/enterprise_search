@@ -25,10 +25,10 @@ class Settings(BaseSettings):
     # Ollama / Self-hosted (optional)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
-    # Retrieval Configuration (best config from evaluation)
+    # Retrieval Configuration (optimized for comprehensive coverage)
     RETRIEVAL_CANDIDATE_MULTIPLIER: int = 10
-    RERANK_CANDIDATES: int = 30
-    RERANK_TOP_N: int = 7
+    RERANK_CANDIDATES: int = 50  # Increased from 30 to catch lower-ranked relevant chunks
+    RERANK_TOP_N: int = 10  # Increased from 7 for better context coverage
     MULTI_QUERY_COUNT: int = 3
 
     # Chunking Configuration
