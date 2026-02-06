@@ -54,9 +54,14 @@ class RAGService:
         metadata_filters: Dict[str, Any],
         is_hyde: bool,
         min_results: int = 1,
+        min_score: float = 0.4,  # Minimum acceptable top score
     ) -> tuple:
         """
         Retrieve with fallback: full filters → hard filters only → no filters.
+
+        Fallback triggers:
+        1. Too few results (< min_results)
+        2. Top score too low (< min_score)
 
         Returns: (results, filters_used, fallback_level)
             fallback_level: 0=full, 1=hard-only, 2=no-filters
@@ -69,9 +74,17 @@ class RAGService:
                 search_text, limit=limit, use_hybrid=use_hybrid,
                 metadata_filters=metadata_filters, is_hyde=is_hyde
             )
-            if len(results) >= min_results:
+            top_score = results[0].get("score", 0.0) if results else 0.0
+
+            # Check both quantity and quality
+            if len(results) >= min_results and top_score >= min_score:
                 return results, metadata_filters, 0
-            print(f"  ⚠️  Only {len(results)} results with full filters, trying hard-only...")
+
+            # Log why we're falling back
+            if len(results) < min_results:
+                print(f"  ⚠️  Only {len(results)} results with full filters, trying hard-only...")
+            elif top_score < min_score:
+                print(f"  ⚠️  Top score {top_score:.3f} < {min_score} with full filters, trying hard-only...")
 
         # Level 1: Try with HARD filters only (drop soft filters)
         if hard_filters:
@@ -79,17 +92,25 @@ class RAGService:
                 search_text, limit=limit, use_hybrid=use_hybrid,
                 metadata_filters=hard_filters, is_hyde=is_hyde
             )
-            if len(results) >= min_results:
-                print(f"  ✅ Got {len(results)} results with hard filters only")
+            top_score = results[0].get("score", 0.0) if results else 0.0
+
+            if len(results) >= min_results and top_score >= min_score:
+                print(f"  ✅ Got {len(results)} results with hard filters only (top score: {top_score:.3f})")
                 return results, hard_filters, 1
-            print(f"  ⚠️  Only {len(results)} results with hard filters, trying no filters...")
+
+            # Log why we're falling back
+            if len(results) < min_results:
+                print(f"  ⚠️  Only {len(results)} results with hard filters, trying no filters...")
+            elif top_score < min_score:
+                print(f"  ⚠️  Top score {top_score:.3f} < {min_score} with hard filters, trying no filters...")
 
         # Level 2: No filters (pure semantic search)
         results = await self.retriever.search(
             search_text, limit=limit, use_hybrid=use_hybrid,
             metadata_filters=None, is_hyde=is_hyde
         )
-        print(f"  📊 Got {len(results)} results without filters (fallback)")
+        top_score = results[0].get("score", 0.0) if results else 0.0
+        print(f"  📊 Got {len(results)} results without filters (top score: {top_score:.3f})")
         return results, None, 2
 
     @staticmethod
