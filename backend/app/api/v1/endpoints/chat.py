@@ -20,6 +20,7 @@ class ChatRequest(BaseModel):
     use_auto_filters: bool = Field(default=True, description="Auto-extract metadata filters from query")
     metadata_filters: Optional[Dict[str, Any]] = Field(default=None, description="Manual filter override (e.g., {'source': 'doc.pdf'})")
     limit: int = Field(default=5, ge=1, le=20, description="Number of results to retrieve")
+    project_ids: Optional[List[str]] = Field(default=None, description="List of project IDs to filter results (multi-tenant)")
     
 class ChatResponse(BaseModel):
     query: str
@@ -42,7 +43,8 @@ async def chat_query(request: ChatRequest):
             use_hybrid_search=request.use_hybrid_search,
             use_auto_filters=request.use_auto_filters,
             metadata_filters=request.metadata_filters,
-            limit=request.limit
+            limit=request.limit,
+            project_ids=request.project_ids
         )
         return result
     except Exception as e:
@@ -74,7 +76,8 @@ async def chat_query_stream(request: ChatRequest):
                 use_hybrid_search=request.use_hybrid_search,
                 use_auto_filters=request.use_auto_filters,
                 metadata_filters=request.metadata_filters,
-                limit=request.limit
+                limit=request.limit,
+                project_ids=request.project_ids
             ):
                 # Format as Server-Sent Event
                 yield f"data: {json.dumps(event)}\n\n"

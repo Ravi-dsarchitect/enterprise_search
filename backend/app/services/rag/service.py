@@ -155,7 +155,8 @@ class RAGService:
         use_hybrid_search: bool = False,
         use_auto_filters: bool = True,
         metadata_filters: Dict[str, Any] = None,
-        limit: int = 5
+        limit: int = 5,
+        project_ids: List[str] = None
     ) -> Dict[str, Any]:
         start_time = time.time()
         print(f"\n🔍 Processing query: {query}")
@@ -164,7 +165,13 @@ class RAGService:
         if use_auto_filters and not metadata_filters:
             metadata_filters = self.query_analyzer.extract_filters(query)
         
-        print(f"⚙️  Settings: HyDE={use_hyde}, Decomposition={use_decomposition}, Hybrid={use_hybrid_search}, AutoFilters={use_auto_filters}, Filters={metadata_filters is not None}, Limit={limit}")
+        # Add project_ids to metadata filters for multi-tenant filtering
+        if project_ids:
+            if metadata_filters is None:
+                metadata_filters = {}
+            metadata_filters["project_ids"] = project_ids
+        
+        print(f"⚙️  Settings: HyDE={use_hyde}, Decomposition={use_decomposition}, Hybrid={use_hybrid_search}, AutoFilters={use_auto_filters}, Filters={metadata_filters is not None}, ProjectIDs={project_ids}, Limit={limit}")
         
         queries_to_run = [query]
         
@@ -253,7 +260,8 @@ class RAGService:
         use_hybrid_search: bool = False,
         use_auto_filters: bool = True,
         metadata_filters: Dict[str, Any] = None,
-        limit: int = 5
+        limit: int = 5,
+        project_ids: List[str] = None
     ):
         """
         Stream answer generation. Retrieval happens first, then answer is streamed.
@@ -266,7 +274,13 @@ class RAGService:
         if use_auto_filters and not metadata_filters:
             metadata_filters = self.query_analyzer.extract_filters(query)
         
-        print(f"⚙️  Settings: HyDE={use_hyde}, Decomposition={use_decomposition}, Hybrid={use_hybrid_search}, AutoFilters={use_auto_filters}, Filters={metadata_filters is not None}, Limit={limit}")
+        # Add project_ids to metadata filters for multi-tenant filtering
+        if project_ids:
+            if metadata_filters is None:
+                metadata_filters = {}
+            metadata_filters["project_ids"] = project_ids
+        
+        print(f"⚙️  Settings: HyDE={use_hyde}, Decomposition={use_decomposition}, Hybrid={use_hybrid_search}, AutoFilters={use_auto_filters}, Filters={metadata_filters is not None}, ProjectIDs={project_ids}, Limit={limit}")
         
         queries_to_run = [query]
         

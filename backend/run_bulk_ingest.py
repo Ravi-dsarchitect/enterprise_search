@@ -1,4 +1,4 @@
-"""Bulk ingestion script with smart chunking."""
+"""Bulk ingestion script. Supports local directories and S3 buckets."""
 import asyncio
 import sys
 
@@ -7,28 +7,19 @@ from app.services.ingestion.bulk_service import BulkIngestionService
 
 
 async def main():
-    # Default directory or use command line arg
-    directory = sys.argv[1] if len(sys.argv) > 1 else "/home/ec2-user/nakul/enterprise_search/docs/OneDrive_1_2-2-2026"
-
-    # Optional limit (for testing)
+    path = sys.argv[1] if len(sys.argv) > 1 else "/home/ec2-user/nakul/enterprise_search/docs"
     limit = int(sys.argv[2]) if len(sys.argv) > 2 else None
-
-    print(f"Starting bulk ingestion from: {directory}")
-    if limit:
-        print(f"Limiting to {limit} files")
+    project_ids = sys.argv[3].split(",") if len(sys.argv) > 3 else None
 
     service = IngestionService()
     bulk = BulkIngestionService(service)
 
-    results = await bulk.ingest_directory(directory, limit=limit)
+    if path.startswith("s3://"):
+        results = await bulk.ingest_s3_folder(path, limit=limit, project_ids=project_ids)
+    else:
+        results = await bulk.ingest_directory(path, limit=limit, project_ids=project_ids)
 
-    print("\n" + "=" * 60)
-    print("INGESTION COMPLETE")
-    print("=" * 60)
-    print(f"  Total:      {results.get('total', 0)}")
-    print(f"  Successful: {results.get('successful', 0)}")
-    print(f"  Failed:     {results.get('failed', 0)}")
-    print("=" * 60)
+    print(f"\nTotal: {results.get('total', 0)}, Success: {results.get('successful', 0)}, Failed: {results.get('failed', 0)}")
 
 
 if __name__ == "__main__":

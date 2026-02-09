@@ -41,6 +41,7 @@ def create_collection_with_indexes(client: QdrantClient):
         "chunk_tags",
         "benefit_types",
         "riders_mentioned",
+        "project_ids",  # Multi-tenant project filtering
     ]
     for field_name in keyword_fields:
         client.create_payload_index(

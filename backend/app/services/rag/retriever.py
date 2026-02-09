@@ -36,6 +36,7 @@ class Retriever:
         - Exact match: {"source": "document.pdf"}
         - List (OR): {"document_type": ["pdf", "docx"]}
         - Range: {"date": {"gte": "2024-01-01", "lte": "2026-01-21"}}
+        - Project IDs: {"project_ids": ["proj1", "proj2"]} - matches if ANY overlap
         
         Note: Date fields are converted to Unix timestamps for numeric range comparison.
         """
@@ -48,7 +49,16 @@ class Retriever:
         date_fields = {"document_date", "created_at", "modified_at", "date"}
         
         for key, value in metadata_filters.items():
-            if isinstance(value, list):
+            # Special handling for project_ids: match if ANY of the query project_ids
+            # overlap with ANY of the chunk's project_ids (list intersection)
+            if key == "project_ids" and isinstance(value, list) and value:
+                conditions.append(
+                    qdrant_models.FieldCondition(
+                        key="project_ids",
+                        match=qdrant_models.MatchAny(any=value)
+                    )
+                )
+            elif isinstance(value, list):
                 # OR condition for list values
                 conditions.append(
                     qdrant_models.FieldCondition(
@@ -265,7 +275,14 @@ class Retriever:
             for key, value in filters.items():
                 payload_value = payload.get(key)
                 
-                if isinstance(value, list):
+                # Special handling for project_ids: list intersection check
+                if key == "project_ids" and isinstance(value, list) and value:
+                    chunk_project_ids = payload_value if isinstance(payload_value, list) else []
+                    # Check if any of the filter project_ids exist in the chunk's project_ids
+                    if not any(pid in chunk_project_ids for pid in value):
+                        matches = False
+                        break
+                elif isinstance(value, list):
                     if payload_value not in value:
                         matches = False
                         break

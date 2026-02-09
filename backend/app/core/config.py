@@ -19,16 +19,16 @@ class Settings(BaseSettings):
     # LLM Configuration
     LLM_PROVIDER: str = "ollama"
     LLM_MODEL_NAME: str = "qwen2.5:3b"
-    LLM_METADATA_MODEL: str = "qwen2.5:3b"  # Smaller model for metadata extraction during ingestion
+    LLM_METADATA_MODEL: str = "qwen2.5:3b"
     GROQ_API_KEY: str = ""
 
-    # Ollama / Self-hosted (optional)
+    # Ollama
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
-    # Retrieval Configuration (optimized for comprehensive coverage)
+    # Retrieval Configuration
     RETRIEVAL_CANDIDATE_MULTIPLIER: int = 10
-    RERANK_CANDIDATES: int = 50  # Increased from 30 to catch lower-ranked relevant chunks
-    RERANK_TOP_N: int = 10  # Increased from 7 for better context coverage
+    RERANK_CANDIDATES: int = 50
+    RERANK_TOP_N: int = 10
     MULTI_QUERY_COUNT: int = 3
 
     # Chunking Configuration
@@ -38,11 +38,14 @@ class Settings(BaseSettings):
 
     # Smart Chunking Configuration
     USE_SMART_CHUNKING: bool = True
-    HIERARCHICAL_PARENT_CHUNK_SIZE: int = 2400  # 3x normal for section context
-    HIERARCHICAL_MIN_SECTION_SIZE: int = 800    # Min section size for parent-child
+    HIERARCHICAL_PARENT_CHUNK_SIZE: int = 2400
+    HIERARCHICAL_MIN_SECTION_SIZE: int = 800
 
-    # Answer Critic (disabled by default - adds latency)
+    # Answer Critic
     ENABLE_ANSWER_CRITIC: bool = False
+
+    # AWS S3
+    AWS_REGION: str = "ap-south-1"
 
     class Config:
         env_file = ("../.env", ".env")

@@ -46,7 +46,7 @@ class IngestionService:
                 print(f"[WARN] LLM metadata extraction disabled: {e}")
                 self.use_llm_metadata = False
 
-    async def process_file(self, file: UploadFile):
+    async def process_file(self, file: UploadFile, project_ids: List[str] = None):
         # 1. Save file temporarily
         temp_dir = "temp_uploads"
         os.makedirs(temp_dir, exist_ok=True)
@@ -57,16 +57,19 @@ class IngestionService:
             f.write(content)
 
         try:
-            return await self.process_local_file(file_path, original_filename=file.filename)
+            return await self.process_local_file(file_path, original_filename=file.filename, project_ids=project_ids)
         finally:
             # Cleanup temp file
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-    async def process_local_file(self, file_path: str, original_filename: str = None, additional_metadata: dict = None, verbose: bool = False):
+    async def process_local_file(self, file_path: str, original_filename: str = None, additional_metadata: dict = None, verbose: bool = False, project_ids: List[str] = None):
         """
         Process a file that already exists locally (e.g., from bulk ingestion).
         Uses StructuredChunker with ParsedDocument for heading-aware chunking.
+        
+        Args:
+            project_ids: List of project IDs this document belongs to (for multi-tenant filtering)
         """
         filename = original_filename or os.path.basename(file_path)
         _p = (lambda msg: print(msg, end="", flush=True)) if verbose else (lambda msg: None)
@@ -174,6 +177,9 @@ class IngestionService:
                 # Contextual retrieval pointers
                 "prev_chunk_id": chunk_ids[i-1] if i > 0 else None,
                 "next_chunk_id": chunk_ids[i+1] if i < len(chunk_texts)-1 else None,
+
+                # Multi-tenant project filtering
+                "project_ids": project_ids or [],
 
                 # Document-level metadata (flattened)
                 **processed_metadata
