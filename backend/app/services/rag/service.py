@@ -126,6 +126,37 @@ class RAGService:
             doc["confidence"] = exp_s / total
         return docs
 
+    @staticmethod
+    def _filter_by_confidence(docs: List[Dict[str, Any]], min_confidence: float = 0.10) -> List[Dict[str, Any]]:
+        """
+        Keep only documents above minimum confidence threshold.
+        Ensures at least 1 document (the top result) is always kept.
+
+        Args:
+            docs: List of documents with confidence scores
+            min_confidence: Minimum confidence threshold (default 0.10 = 10%)
+
+        Returns:
+            Filtered list of documents
+        """
+        if not docs:
+            return docs
+
+        # Always keep top result
+        filtered = [docs[0]]
+
+        # Add additional results if they meet threshold
+        for doc in docs[1:]:
+            confidence = doc.get("confidence", 0)
+            if confidence >= min_confidence:
+                filtered.append(doc)
+            else:
+                # Since sorted by confidence (via score), we can stop early
+                print(f"  🔽 Dropping low-confidence citations (<{min_confidence*100:.0f}%): {len(docs) - len(filtered)} citations removed")
+                break
+
+        return filtered
+
     def _build_context_str(self, context):
         """Build formatted context string for the critic (same format as generator)."""
         parts = []
@@ -221,8 +252,9 @@ class RAGService:
         # 4. Rerank Global Results (Optional but recommended if we have many from expansion)
         # The retriever already reranks implicitly per search, but re-ranking the combined set is better.
         # For simplicity, we'll trust the individual top results or just slice.
-        final_context = unique_results[:10] # Cap context size
+        final_context = unique_results[:limit]  # Respect the limit parameter
         final_context = self._compute_confidence(final_context)
+        final_context = self._filter_by_confidence(final_context, min_confidence=0.10)  # Dynamic K: filter low-confidence citations
 
         # 5. Generate Answer
         llm_start = time.time()
@@ -321,13 +353,14 @@ class RAGService:
         seen = set()
         unique_results = []
         for doc in all_results:
-            key = (doc['source'], doc['text'][:100]) 
+            key = (doc['source'], doc['text'][:100])
             if key not in seen:
                 seen.add(key)
                 unique_results.append(doc)
-        
-        final_context = unique_results[:10]
+
+        final_context = unique_results[:limit]  # Respect the limit parameter
         final_context = self._compute_confidence(final_context)
+        final_context = self._filter_by_confidence(final_context, min_confidence=0.10)  # Dynamic K: filter low-confidence citations
 
         # Yield metadata and citations first
         yield {
