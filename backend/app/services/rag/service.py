@@ -276,6 +276,18 @@ class RAGService:
         final_context = self._filter_by_confidence(final_context, min_confidence=0.10)  # Dynamic K: filter low-confidence citations
 
         # 5. Generate Answer
+        # If no results found, return early with a standard message
+        if not final_context:
+            print("  ❌ No relevant documents found, returning default message")
+            total_time = time.time() - start_time
+            print(f"✅ Total query time: {total_time:.2f}s\n")
+            return {
+                "query": query,
+                "answer": "I don't have sufficient information in the provided documents to answer this question.",
+                "citations": [],
+                "generated_queries": queries_to_run if use_decomposition else []
+            }
+
         llm_start = time.time()
         answer = self.generator.generate_answer(query, final_context, conversation_history=conversation_history)
         print(f"⏱️  LLM generation took: {time.time() - llm_start:.2f}s")
@@ -390,16 +402,39 @@ class RAGService:
                 "num_citations": len(final_context)
             }
         }
-        
+
         yield {
             "type": "citations",
             "data": final_context
         }
-        
+
         # 4. Stream the answer
+        # If no results found, return early with a standard message
+        if not final_context:
+            print("  ❌ No relevant documents found, returning default message")
+            no_results_msg = "I don't have sufficient information in the provided documents to answer this question."
+
+            # Stream the message as tokens
+            for token in no_results_msg:
+                yield {
+                    "type": "token",
+                    "data": token
+                }
+
+            # Yield completion event
+            yield {
+                "type": "done",
+                "data": {
+                    "total_time": time.time() - start_time,
+                    "answer": no_results_msg
+                }
+            }
+            print(f"✅ Total query time: {time.time() - start_time:.2f}s\n")
+            return
+
         llm_start = time.time()
         full_answer = ""
-        
+
         async for token in self.generator.generate_answer_stream(query, final_context, conversation_history=conversation_history):
             full_answer += token
             yield {
