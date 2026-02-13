@@ -54,7 +54,8 @@ class RAGService:
         metadata_filters: Dict[str, Any],
         is_hyde: bool,
         min_results: int = 1,
-        min_score: float = 0.4,  # Minimum acceptable top score
+        min_score: float = 0.4,  # Minimum acceptable top score for fallback
+        hard_threshold: float = 0.5,  # Hard minimum - return empty if below this
     ) -> tuple:
         """
         Retrieve with fallback: full filters → hard filters only → no filters.
@@ -62,6 +63,8 @@ class RAGService:
         Fallback triggers:
         1. Too few results (< min_results)
         2. Top score too low (< min_score)
+
+        Hard threshold: If top score < hard_threshold, return empty results (no answer).
 
         Returns: (results, filters_used, fallback_level)
             fallback_level: 0=full, 1=hard-only, 2=no-filters
@@ -75,6 +78,11 @@ class RAGService:
                 metadata_filters=metadata_filters, is_hyde=is_hyde
             )
             top_score = results[0].get("score", 0.0) if results else 0.0
+
+            # Hard threshold check - return empty if too low
+            if results and top_score < hard_threshold:
+                print(f"  ❌ Top score {top_score:.3f} below hard threshold {hard_threshold}, returning no results")
+                return [], metadata_filters, 0
 
             # Check both quantity and quality
             if len(results) >= min_results and top_score >= min_score:
@@ -94,6 +102,11 @@ class RAGService:
             )
             top_score = results[0].get("score", 0.0) if results else 0.0
 
+            # Hard threshold check - return empty if too low
+            if results and top_score < hard_threshold:
+                print(f"  ❌ Top score {top_score:.3f} below hard threshold {hard_threshold}, returning no results")
+                return [], hard_filters, 1
+
             if len(results) >= min_results and top_score >= min_score:
                 print(f"  ✅ Got {len(results)} results with hard filters only (top score: {top_score:.3f})")
                 return results, hard_filters, 1
@@ -110,6 +123,12 @@ class RAGService:
             metadata_filters=None, is_hyde=is_hyde
         )
         top_score = results[0].get("score", 0.0) if results else 0.0
+
+        # Hard threshold check - return empty if too low
+        if results and top_score < hard_threshold:
+            print(f"  ❌ Top score {top_score:.3f} below hard threshold {hard_threshold}, returning no results")
+            return [], None, 2
+
         print(f"  📊 Got {len(results)} results without filters (top score: {top_score:.3f})")
         return results, None, 2
 
