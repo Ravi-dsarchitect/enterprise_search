@@ -2,6 +2,7 @@ import math
 import time
 from typing import Dict, Any, List
 from app.services.rag.generator import LLMFactory, LLMGenerator, AnswerCritic
+from app.services.rag.guardrail import QueryGuardrail, GUARDRAIL_REJECTION_MESSAGE
 from app.services.rag.query_transformer import QueryTransformer
 from app.services.rag.query_analyzer import QueryAnalyzer
 from app.services.rag.retriever import Retriever
@@ -36,6 +37,7 @@ class RAGService:
         self.generator: LLMGenerator = LLMFactory.create_generator()
         self.query_transformer = QueryTransformer()
         self.query_analyzer = QueryAnalyzer()
+        self.guardrail = QueryGuardrail() if settings.ENABLE_QUERY_GUARDRAIL else None
         self.critic = AnswerCritic() if settings.ENABLE_ANSWER_CRITIC else None
 
     def _split_filters(self, filters: Dict[str, Any]) -> tuple:
@@ -210,7 +212,23 @@ class RAGService:
     ) -> Dict[str, Any]:
         start_time = time.time()
         print(f"\n🔍 Processing query: {query}")
-        
+
+        # --- Guardrail: reject out-of-scope queries before retrieval ---
+        if self.guardrail:
+            guardrail_start = time.time()
+            guardrail_result = self.guardrail.check(query)
+            print(f"⏱️  Guardrail took: {time.time() - guardrail_start:.2f}s")
+            if not guardrail_result.allowed:
+                total_time = time.time() - start_time
+                print(f"🛡️  Query rejected by guardrail: {guardrail_result.reason}")
+                print(f"✅ Total query time: {total_time:.2f}s\n")
+                return {
+                    "query": query,
+                    "answer": GUARDRAIL_REJECTION_MESSAGE,
+                    "citations": [],
+                    "generated_queries": []
+                }
+
         # Auto-extract filters if enabled and no manual filters provided
         if use_auto_filters and not metadata_filters:
             metadata_filters = self.query_analyzer.extract_filters(query)
@@ -332,7 +350,38 @@ class RAGService:
         """
         start_time = time.time()
         print(f"\n🔍 Processing query (streaming): {query}")
-        
+
+        # --- Guardrail: reject out-of-scope queries before retrieval ---
+        if self.guardrail:
+            guardrail_start = time.time()
+            guardrail_result = self.guardrail.check(query)
+            print(f"⏱️  Guardrail took: {time.time() - guardrail_start:.2f}s")
+            if not guardrail_result.allowed:
+                total_time = time.time() - start_time
+                print(f"🛡️  Query rejected by guardrail: {guardrail_result.reason}")
+                # Stream rejection as metadata + tokens + done
+                yield {
+                    "type": "metadata",
+                    "data": {
+                        "query": query,
+                        "retrieval_time": 0,
+                        "num_citations": 0,
+                        "guardrail_rejected": True
+                    }
+                }
+                yield {"type": "citations", "data": []}
+                for token in GUARDRAIL_REJECTION_MESSAGE:
+                    yield {"type": "token", "data": token}
+                yield {
+                    "type": "done",
+                    "data": {
+                        "total_time": time.time() - start_time,
+                        "answer": GUARDRAIL_REJECTION_MESSAGE
+                    }
+                }
+                print(f"✅ Total query time: {time.time() - start_time:.2f}s\n")
+                return
+
         # Auto-extract filters if enabled and no manual filters provided
         if use_auto_filters and not metadata_filters:
             metadata_filters = self.query_analyzer.extract_filters(query)

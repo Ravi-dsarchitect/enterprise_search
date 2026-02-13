@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     HIERARCHICAL_PARENT_CHUNK_SIZE: int = 2400
     HIERARCHICAL_MIN_SECTION_SIZE: int = 800
 
+    # Query Guardrail
+    ENABLE_QUERY_GUARDRAIL: bool = True
+
     # Answer Critic
     ENABLE_ANSWER_CRITIC: bool = False
 
